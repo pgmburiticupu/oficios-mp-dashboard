@@ -1,5 +1,5 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Dashboard PGM 2026</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#f4f6f9;color:#1a1a2e}header{background:#1a1a2e;color:white;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}header h1{font-size:18px;font-weight:600}.subtitle{font-size:12px;opacity:.6;margin-top:2px}#last-update{font-size:11px;opacity:.6}.tabs{display:flex;background:#111827;padding:0 32px}.tab-btn{padding:12px 24px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .2s}.tab-btn.active{color:white;border-bottom-color:#60a5fa}.container{max-width:1200px;margin:0 auto;padding:24px 20px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}.card{background:white;border-radius:10px;padding:16px 18px;border:1px solid #e5e7eb}.card .label{font-size:12px;color:#6b7280;margin-bottom:6px}.card .value{font-size:28px;font-weight:700}.card.total .value{color:#1a1a2e}.card.atrasado .value{color:#b91c1c}.card.critico .value{color:#92400e}.card.ok .value{color:#1d6534}.card.usado .value{color:#1d6534}.card.livre .value{color:#1d4ed8}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}.filter-btn{padding:6px 14px;border-radius:999px;border:1px solid #d1d5db;background:white;font-size:13px;cursor:pointer;color:#374151}.filter-btn.active{background:#1a1a2e;color:white;border-color:#1a1a2e}.table-wrap{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}table{width:100%;border-collapse:collapse;font-size:13px}thead{background:#1a1a2e;color:white}th{padding:12px 14px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap}td{padding:10px 14px;border-bottom:1px solid #f1f3f5;vertical-align:middle}tr:last-child td{border-bottom:none}tr:hover td{background:#f9fafb}.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}.badge-critico{background:#fee2e2;color:#991b1b}.badge-alto{background:#fef3c7;color:#92400e}.badge-atraso{background:#fff7ed;color:#9a3412}.badge-hoje{background:#ffedd5;color:#9a3412}.badge-avencer{background:#dbeafe;color:#1e40af}.dias-num{font-weight:700;font-size:14px}.dias-red{color:#b91c1c}.dias-amber{color:#92400e}.dias-blue{color:#1d4ed8}.resp{color:#6b7280;font-size:12px}.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:60px;color:#6b7280;font-size:14px}.spinner{width:20px;height:20px;border:2px solid #e5e7eb;border-top-color:#1a1a2e;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error-box{background:#fee2e2;color:#991b1b;padding:16px 20px;border-radius:8px;margin-bottom:20px;font-size:13px;display:none}.btn-resp{padding:4px 10px;border-radius:6px;border:1px solid #16a34a;background:white;color:#16a34a;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}.btn-resp:hover{background:#16a34a;color:white}.btn-resp:disabled{opacity:.5;cursor:not-allowed}.success-row td{background:#f0fdf4!important;opacity:.7}.grid-nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;padding:4px}.num-cell{border-radius:8px;padding:10px 6px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}.num-cell.usado{background:#dcfce7;color:#15803d;border-color:#86efac}.num-cell.usado:hover{background:#bbf7d0;border-color:#4ade80}.num-cell.livre{background:#f1f5f9;color:#64748b;border-color:#e2e8f0}.num-cell.livre:hover{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.num-cell.saving{opacity:.5;cursor:not-allowed}footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}</style></head><body>
-<header><div><h1>Dashboard PGM Buriticupu 2026</h1><div class="subtitle">Controle de Oficios e Numeracao</div></div><div id="last-update">Carregando...</div></header>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Controle de Oficios - PGM</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#f4f6f9;color:#1a1a2e}header{background:#1a1a2e;color:white;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}header h1{font-size:18px;font-weight:600}.subtitle{font-size:12px;opacity:.6;margin-top:2px}#last-update{font-size:11px;opacity:.6}.tabs{display:flex;background:#111827;padding:0 32px}.tab-btn{padding:12px 24px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .2s}.tab-btn.active{color:white;border-bottom-color:#60a5fa}.container{max-width:1200px;margin:0 auto;padding:24px 20px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}.card{background:white;border-radius:10px;padding:16px 18px;border:1px solid #e5e7eb}.card .label{font-size:12px;color:#6b7280;margin-bottom:6px}.card .value{font-size:28px;font-weight:700}.card.total .value{color:#1a1a2e}.card.atrasado .value{color:#b91c1c}.card.critico .value{color:#92400e}.card.ok .value{color:#1d6534}.card.usado .value{color:#1d6534}.card.livre .value{color:#1d4ed8}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}.filter-btn{padding:6px 14px;border-radius:999px;border:1px solid #d1d5db;background:white;font-size:13px;cursor:pointer;color:#374151}.filter-btn.active{background:#1a1a2e;color:white;border-color:#1a1a2e}.table-wrap{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}table{width:100%;border-collapse:collapse;font-size:13px}thead{background:#1a1a2e;color:white}th{padding:12px 14px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap}td{padding:10px 14px;border-bottom:1px solid #f1f3f5;vertical-align:middle}tr:last-child td{border-bottom:none}tr:hover td{background:#f9fafb}.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}.badge-critico{background:#fee2e2;color:#991b1b}.badge-alto{background:#fef3c7;color:#92400e}.badge-atraso{background:#fff7ed;color:#9a3412}.badge-hoje{background:#ffedd5;color:#9a3412}.badge-avencer{background:#dbeafe;color:#1e40af}.dias-num{font-weight:700;font-size:14px}.dias-red{color:#b91c1c}.dias-amber{color:#92400e}.dias-blue{color:#1d4ed8}.resp{color:#6b7280;font-size:12px}.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:60px;color:#6b7280;font-size:14px}.spinner{width:20px;height:20px;border:2px solid #e5e7eb;border-top-color:#1a1a2e;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error-box{background:#fee2e2;color:#991b1b;padding:16px 20px;border-radius:8px;margin-bottom:20px;font-size:13px;display:none}.btn-resp{padding:4px 10px;border-radius:6px;border:1px solid #16a34a;background:white;color:#16a34a;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}.btn-resp:hover{background:#16a34a;color:white}.btn-resp:disabled{opacity:.5;cursor:not-allowed}.success-row td{background:#f0fdf4!important;opacity:.7}.grid-nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;padding:4px}.num-cell{border-radius:8px;padding:10px 6px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}.num-cell.usado{background:#dcfce7;color:#15803d;border-color:#86efac}.num-cell.usado:hover{background:#bbf7d0;border-color:#4ade80}.num-cell.livre{background:#f1f5f9;color:#64748b;border-color:#e2e8f0}.num-cell.livre:hover{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.num-cell.saving{opacity:.5;cursor:not-allowed}footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}</style></head><body>
+<header><div><h1>Controle de Oficios - PGM</h1><div class="subtitle">PGM Buriticupu 2026</div></div><div id="last-update">Carregando...</div></header>
 <div class="tabs"><button class="tab-btn active" onclick="switchTab('oficios',this)">Oficios MP 2026</button><button class="tab-btn" onclick="switchTab('numeros',this)">Controle de Numeros</button></div>
 
 <div id="tab-oficios">
@@ -40,7 +40,7 @@
     <button class="filter-btn active" onclick="filterNum('all',this)">Todos</button>
     <button class="filter-btn" onclick="filterNum('livre',this)">Disponiveis</button>
     <button class="filter-btn" onclick="filterNum('usado',this)">Usados</button>
-    <small style="color:#6b7280;font-size:12px;margin-left:8px">✅ Clique num verde para desmarcar | Clique num cinza para marcar como usado</small>
+    <small style="color:#6b7280;font-size:12px;margin-left:8px">â Clique num verde para desmarcar | Clique num cinza para marcar como usado</small>
   </div>
   <div class="table-wrap" style="padding:16px">
     <div class="loading" id="loading-num"><div class="spinner"></div> Carregando...</div>
@@ -72,7 +72,7 @@ async function loadOf(){
     if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
     ofRows=d.results.map(pg=>{
       const pp=pg.properties;
-      const titulo=(pp['Número do Expediente']?.title||[]).map(t=>t.plain_text).join('')||pg.id;
+      const titulo=(pp['NÃºmero do Expediente']?.title||[]).map(t=>t.plain_text).join('')||pg.id;
       const pr=pp['Data do Vencimento']?.date?.start||pp['Novo Vencimento']?.date?.start||'';
       const pd=pr?new Date(pr+'T00:00:00'):null;
       const da=pd?Math.floor((today-pd)/86400000):null;
@@ -115,7 +115,7 @@ async function loadNums(){
   try{
     let all=[],cursor=undefined;
     do{
-      const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:D2,payload:{sorts:[{property:'Número',direction:'ascending'}],page_size:100,...(cursor?{start_cursor:cursor}:{})}})});
+      const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:D2,payload:{sorts:[{property:'NÃºmero',direction:'ascending'}],page_size:100,...(cursor?{start_cursor:cursor}:{})}})});
       const d=await r.json();
       if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
       all=[...all,...d.results];
@@ -123,7 +123,7 @@ async function loadNums(){
     }while(cursor);
     numRows=all.map(pg=>{
       const pp=pg.properties;
-      return{id:pg.id,n:parseInt((pp['Número']?.title||[]).map(t=>t.plain_text).join(''))||0,usado:pp['Usado']?.checkbox||false,data:pp['Data de Uso']?.date?.start||''};
+      return{id:pg.id,n:parseInt((pp['NÃºmero']?.title||[]).map(t=>t.plain_text).join(''))||0,usado:pp['Usado']?.checkbox||false,data:pp['Data de Uso']?.date?.start||''};
     }).sort((a,b)=>a.n-b.n);
     rcNum();renderNum(afNum);
     document.getElementById('loading-num').style.display='none';
@@ -140,7 +140,7 @@ function rcNum(){
   document.getElementById('n-total').textContent=numRows.length;
   document.getElementById('n-usado').textContent=usado;
   document.getElementById('n-livre').textContent=livre;
-  document.getElementById('n-proximo').textContent=proximo?'Nº '+proximo.n:'Esgotado';
+  document.getElementById('n-proximo').textContent=proximo?'NÂº '+proximo.n:'Esgotado';
 }
 function filterNum(f,btn){document.querySelectorAll('#tab-numeros .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');afNum=f;renderNum(f);}
 function renderNum(f){
@@ -151,7 +151,7 @@ function renderNum(f){
   grid.innerHTML=fl.map(r=>`<div class="num-cell ${r.usado?'usado':'livre'}" id="nc-${r.id}"
     title="${r.usado?'Usado em '+(r.data?new Date(r.data+'T00:00:00').toLocaleDateString('pt-BR'):'data desconhecida'):'Clique para marcar como usado'}"
     onclick="toggleNum('${r.id}',${r.n},${r.usado})">
-    ${r.usado?'✅':''} ${r.n}
+    ${r.usado?'â':''} ${r.n}
   </div>`).join('');
 }
 async function toggleNum(id,num,usado){
@@ -162,7 +162,7 @@ async function toggleNum(id,num,usado){
   const action=usado?'unmarkUsed':'markUsed';
   const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,notionToken:T,pageId:id})});
   const d=await r.json();
-  if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'✅ ':'')+num;el.onclick=()=>toggleNum(id,num,usado);alert('Erro: '+d.message);return;}
+  if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'â ':'')+num;el.onclick=()=>toggleNum(id,num,usado);alert('Erro: '+d.message);return;}
   const row=numRows.find(x=>x.id===id);
   if(row){row.usado=!usado;row.data=usado?'':new Date().toISOString().split('T')[0];}
   rcNum();renderNum(afNum);

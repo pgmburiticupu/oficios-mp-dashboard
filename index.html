@@ -20,7 +20,32 @@
   .num-cell { padding: 8px 4px; font-size: 12px; }
   small { display: none; }
   .card.ok .value { font-size: 16px; }
-}</style></head><body>
+}
+#login-screen{position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:white;border-radius:16px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-box h2{font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.login-box p{font-size:13px;color:#6b7280;margin-bottom:28px}
+.login-box label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
+.login-box input{width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px;transition:border .2s}
+.login-box input:focus{border-color:#1a1a2e}
+.login-box button{width:100%;padding:12px;background:#1a1a2e;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.login-box button:hover{opacity:.85}
+.login-error{color:#b91c1c;font-size:13px;margin-top:-10px;margin-bottom:12px;display:none}
+@media(max-width:600px){.login-box{padding:28px 20px;margin:16px}}
+</style></head><body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Controle de Oficios - PGM</h2>
+    <p>PGM Buriticupu 2026 — Acesso restrito</p>
+    <label>Usuário</label>
+    <input type="text" id="login-user" placeholder="Digite o usuário" autocomplete="username"/>
+    <label>Senha</label>
+    <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
+    <button onclick="doLogin()">Entrar</button>
+  </div>
+</div>
 <header><div><h1>Controle de Oficios - PGM</h1><div class="subtitle">PGM Buriticupu 2026</div></div><div id="last-update">Carregando...</div></header>
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('oficios',this)">Oficios MP 2026</button>

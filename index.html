@@ -37,24 +37,24 @@
 <div id="login-screen">
   <div class="login-box">
     <h2>Controle de Oficios - PGM</h2>
-    <p>PGM Buriticupu 2026 — Acesso restrito</p>
-    <label>Usuário</label>
-    <input type="text" id="login-user" placeholder="Digite o usuário" autocomplete="username"/>
+    <p>PGM Buriticupu 2026 â Acesso restrito</p>
+    <label>UsuÃ¡rio</label>
+    <input type="text" id="login-user" placeholder="Digite o usuÃ¡rio" autocomplete="username"/>
     <label>Senha</label>
     <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:12px">
       <input type="checkbox" id="remember-me" style="width:16px;height:16px;cursor:pointer;margin:0"/>
       <label for="remember-me" style="font-size:13px;color:#374151;font-weight:400;cursor:pointer;margin:0">Lembrar neste dispositivo</label>
     </div>
-    <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
+    <div class="login-error" id="login-error">UsuÃ¡rio ou senha incorretos.</div>
     <button onclick="doLogin()">Entrar</button>
   </div>
 </div>
 <header><div><h1>Controle de Oficios - PGM</h1><div class="subtitle">PGM Buriticupu 2026</div></div><div id="last-update">Carregando...</div></header>
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('oficios',this)">Oficios MP 2026</button>
-  <button class="tab-btn" onclick="switchTab('numeros',this)">Número de Ofício-PGM</button>
-  <button class="tab-btn" onclick="switchTab('pareceres',this)">Número de Parecer-PGM</button>
+  <button class="tab-btn" onclick="switchTab('numeros',this)">NÃºmero de OfÃ­cio-PGM</button>
+  <button class="tab-btn" onclick="switchTab('pareceres',this)">NÃºmero de Parecer-PGM</button>
 </div>
 
 <div id="tab-oficios">
@@ -95,7 +95,7 @@
     <button class="filter-btn active" onclick="filterNum2('all',this)">Todos</button>
     <button class="filter-btn" onclick="filterNum2('livre',this)">Disponiveis</button>
     <button class="filter-btn" onclick="filterNum2('usado',this)">Usados</button>
-    <small style="color:#6b7280;font-size:12px;margin-left:8px">✅ Verde = usado | Cinza = disponivel | Clique para alternar</small>
+    <small style="color:#6b7280;font-size:12px;margin-left:8px">â Verde = usado | Cinza = disponivel | Clique para alternar</small>
   </div>
   <div class="table-wrap" style="padding:16px">
     <div class="loading" id="loading-num2"><div class="spinner"></div> Carregando...</div>
@@ -118,7 +118,7 @@
     <button class="filter-btn active" onclick="filterNum3('all',this)">Todos</button>
     <button class="filter-btn" onclick="filterNum3('livre',this)">Disponiveis</button>
     <button class="filter-btn" onclick="filterNum3('usado',this)">Usados</button>
-    <small style="color:#6b7280;font-size:12px;margin-left:8px">✅ Verde = usado | Cinza = disponivel | Clique para alternar</small>
+    <small style="color:#6b7280;font-size:12px;margin-left:8px">â Verde = usado | Cinza = disponivel | Clique para alternar</small>
   </div>
   <div class="table-wrap" style="padding:16px">
     <div class="loading" id="loading-num3"><div class="spinner"></div> Carregando...</div>
@@ -222,7 +222,7 @@ function rcNums(rows,p){
   document.getElementById(p+'-total').textContent=rows.length;
   document.getElementById(p+'-usado').textContent=usado;
   document.getElementById(p+'-livre').textContent=livre;
-  document.getElementById(p+'-proximo').textContent=prox?'Nº '+prox.n:'Esgotado';
+  document.getElementById(p+'-proximo').textContent=prox?'NÂº '+prox.n:'Esgotado';
 }
 function renderNums(rows,gridId,prefix,f){
   const fl=rows.filter(r=>f==='all'||(f==='usado'&&r.usado)||(f==='livre'&&!r.usado));
@@ -232,7 +232,7 @@ function renderNums(rows,gridId,prefix,f){
   grid.style.display='grid';empty.style.display='none';
   grid.innerHTML=fl.map(r=>`<div class="num-cell ${r.usado?'usado':'livre'}" id="nc-${r.id}"
     title="${r.usado?'Usado em '+(r.data?new Date(r.data+'T00:00:00').toLocaleDateString('pt-BR'):'?'):'Clique para marcar'}"
-    onclick="toggleNum('${r.id}',${r.n},${r.usado},'${prefix}')">${r.usado?'✅ ':''}${r.n}</div>`).join('');
+    onclick="toggleNum('${r.id}',${r.n},${r.usado},'${prefix}')">${r.usado?'â ':''}${r.n}</div>`).join('');
 }
 function filterNum2(f,btn){document.querySelectorAll('#tab-numeros .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');afNum2=f;renderNums(num2Rows,'grid-num2','num2',f);}
 function filterNum3(f,btn){document.querySelectorAll('#tab-pareceres .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');afNum3=f;renderNums(num3Rows,'grid-num3','num3',f);}
@@ -242,7 +242,7 @@ async function toggleNum(id,num,usado,prefix){
   el.classList.add('saving');el.onclick=null;el.textContent='...';
   const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:usado?'unmarkUsed':'markUsed',notionToken:T,pageId:id})});
   const d=await r.json();
-  if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'✅ ':'')+num;el.onclick=()=>toggleNum(id,num,usado,prefix);alert('Erro: '+d.message);return;}
+  if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'â ':'')+num;el.onclick=()=>toggleNum(id,num,usado,prefix);alert('Erro: '+d.message);return;}
   const rows=prefix==='num2'?num2Rows:num3Rows;
   const row=rows.find(x=>x.id===id);
   if(row){row.usado=!usado;row.data=usado?'':new Date().toISOString().split('T')[0];}
@@ -251,5 +251,37 @@ async function toggleNum(id,num,usado,prefix){
   renderNums(rows,'grid-'+prefix,prefix,prefix==='num2'?afNum2:afNum3);
 }
 
-loadOf();
+
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
+  const errEl = document.getElementById('login-error');
+  if (user === 'pgm' && pass === '12345') {
+    sessionStorage.setItem('pgm_auth', 'ok');
+    if (remember) { localStorage.setItem('pgm_auth', 'ok'); localStorage.setItem('pgm_user', user); }
+    document.getElementById('login-screen').style.display = 'none';
+    loadOf();
+  } else {
+    errEl.style.display = 'block';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+
+function checkAuth() {
+  if (localStorage.getItem('pgm_auth') === 'ok') {
+    if (document.getElementById('login-user')) document.getElementById('login-user').value = localStorage.getItem('pgm_user') || '';
+    if (document.getElementById('remember-me')) document.getElementById('remember-me').checked = true;
+    document.getElementById('login-screen').style.display = 'none';
+    loadOf();
+    return;
+  }
+  if (sessionStorage.getItem('pgm_auth') === 'ok') {
+    document.getElementById('login-screen').style.display = 'none';
+    loadOf();
+  }
+}
+
+checkAuth();
 </script></body></html>

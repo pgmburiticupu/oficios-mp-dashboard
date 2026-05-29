@@ -41,10 +41,7 @@
     <label>Usuário</label>
     <input type="text" id="login-user" placeholder="Digite o usuário" autocomplete="username"/>
     <label>Senha</label>
-    <div style="position:relative">
-      <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:42px;width:100%"/>
-      <button onclick="togglePass()" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#6b7280;font-size:18px;line-height:1;padding:0" id="eye-btn">👁️</button>
-    </div>
+    <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:12px">
       <input type="checkbox" id="remember-me" style="width:16px;height:16px;cursor:pointer;margin:0"/>
       <label for="remember-me" style="font-size:13px;color:#374151;font-weight:400;cursor:pointer;margin:0">Lembrar neste dispositivo</label>

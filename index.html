@@ -390,10 +390,15 @@ function doIdentificar() {
   localStorage.setItem('pgm_nome', nome);
   localStorage.setItem('pgm_identificado', 'ok');
   sessionStorage.setItem('pgm_id_sessao', 'ok');
-  // Registrar no Google Analytics
+  // Registrar no Google Analytics com User ID
   if (typeof gtag !== 'undefined') {
-    gtag('set', 'user_properties', { servidor: nome });
-    gtag('event', 'login', { method: 'palavra_chave', servidor: nome });
+    gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
+    gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });
+    gtag('event', 'login', {
+      method: 'palavra_chave',
+      servidor: nome,
+      nome_servidor: nome
+    });
   }
   // Fechar tela e mostrar badge
   document.getElementById('id-screen').classList.remove('show');
@@ -413,8 +418,12 @@ function checkIdentificacao() {
   if (nome && ok === 'ok' && sessaoOk === 'ok') {
     // Ja identificado nesta sessao
     if (typeof gtag !== 'undefined') {
-      gtag('set', 'user_properties', { servidor: nome });
-      gtag('event', 'page_view', { servidor: nome });
+      gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
+      gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });
+      gtag('event', 'acesso', {
+        servidor: nome,
+        nome_servidor: nome
+      });
     }
     mostrarBadge(nome);
     loadOf();

@@ -427,35 +427,16 @@ function mostrarBadge(nome) {
 
 function checkIdentificacao() {
   var nome = localStorage.getItem('pgm_nome');
-  var ok = localStorage.getItem('pgm_identificado');
-  var sessaoOk = sessionStorage.getItem('pgm_id_sessao');
-  if (nome && ok === 'ok') {
-    // Ja identificado - mostrar badge sempre
-    mostrarBadge(nome);
-    // Registrar acesso no Sheets a cada sessao nova
-    if (!sessaoOk) { registrarNoSheets(nome); }
-    if (typeof gtag !== 'undefined') {
-      gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
-      gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });
-      if (!sessaoOk) {
-        // Novo acesso (nova sessao) - registrar evento
-        gtag('event', 'acesso', { servidor: nome, nome_servidor: nome });
-        sessionStorage.setItem('pgm_id_sessao', 'ok');
+  // Sempre mostrar tela de identificacao - preencher nome se ja conhecido
+  if (nome) {
+    var sel = document.getElementById('id-nome');
+    if (sel) {
+      for (var i=0; i<sel.options.length; i++) {
+        if (sel.options[i].value === nome) { sel.selectedIndex = i; break; }
       }
     }
-    loadOf();
-  } else {
-    // Mostrar tela de identificacao - preencher nome se ja conhecido
-    if (nome) {
-      var sel = document.getElementById('id-nome');
-      if (sel) {
-        for (var i=0; i<sel.options.length; i++) {
-          if (sel.options[i].value === nome) { sel.selectedIndex = i; break; }
-        }
-      }
-    }
-    document.getElementById('id-screen').classList.add('show');
   }
+  document.getElementById('id-screen').classList.add('show');
 }
 
 function registrarNoSheets(nome) {

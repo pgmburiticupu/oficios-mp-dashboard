@@ -128,7 +128,20 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
     <h2>Identificacao do Servidor</h2>
     <p>Para continuar, informe seu nome e a palavra-chave de acesso.</p>
     <label>Seu nome</label>
-    <input type="text" id="id-nome" placeholder="Ex: Whesley, Gianice..." autocomplete="name" onkeydown="if(event.key==='Enter')doIdentificar()"/>
+    <select id="id-nome" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px;color:#374151;background:white">
+      <option value="">Selecione seu nome...</option>
+      <option>Alexandre</option>
+      <option>Bruno</option>
+      <option>Erika</option>
+      <option>Gabi</option>
+      <option>Gianice</option>
+      <option>Gustavo</option>
+      <option>Maria Eduarda</option>
+      <option>Matheus Felipe</option>
+      <option>Romulo</option>
+      <option>Ronny</option>
+      <option>Whesley</option>
+    </select>
     <label>Palavra-chave</label>
     <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()"/>
     <div class="id-error" id="id-error">Palavra-chave incorreta. Tente novamente.</div>
@@ -371,7 +384,7 @@ function doIdentificar() {
   var nome = document.getElementById('id-nome').value.trim();
   var chave = document.getElementById('id-chave').value;
   var err = document.getElementById('id-error');
-  if (!nome) { err.style.display='block'; err.textContent='Digite seu nome.'; return; }
+  if (!nome) { err.style.display='block'; err.textContent='Selecione seu nome.'; return; }
   if (chave !== CHAVE) { err.style.display='block'; err.textContent='Palavra-chave incorreta. Tente novamente.'; document.getElementById('id-chave').value=''; document.getElementById('id-chave').focus(); return; }
   // Salvar identificacao permanente
   localStorage.setItem('pgm_nome', nome);

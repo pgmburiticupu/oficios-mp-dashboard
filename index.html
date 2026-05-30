@@ -432,6 +432,8 @@ function checkIdentificacao() {
   if (nome && ok === 'ok') {
     // Ja identificado - mostrar badge sempre
     mostrarBadge(nome);
+    // Registrar acesso no Sheets a cada sessao nova
+    if (!sessaoOk) { registrarNoSheets(nome); }
     if (typeof gtag !== 'undefined') {
       gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
       gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });

@@ -1,4 +1,36 @@
-<!DOCTYPE html>
+<!DOC
+
+<div id="id-screen">
+  <div class="id-box">
+    <h2>Identificacao do Servidor</h2>
+    <p>Selecione seu nome para continuar. Novo servidor? Clique em "Criar acesso".</p>
+    <label>Seu nome</label>
+    <select id="id-nome" onchange="toggleNovoAcesso()">
+      <option value="">Selecione seu nome...</option>
+      <option>Alexandre</option>
+      <option>Bruno</option>
+      <option>Erika</option>
+      <option>Gabi</option>
+      <option>Gianice</option>
+      <option>Gustavo</option>
+      <option>Maria Eduarda</option>
+      <option>Matheus Felipe</option>
+      <option>Romulo</option>
+      <option>Ronny</option>
+      <option>Whesley</option>
+      <option value="__novo__">+ Criar novo acesso</option>
+    </select>
+    <div id="novo-acesso-box" style="display:none">
+      <label>Seu nome completo</label>
+      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..."/>
+      <label>Palavra-chave de cadastro</label>
+      <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()"/>
+    </div>
+    <div class="id-error" id="id-error"></div>
+    <button class="btn-identificar" onclick="doIdentificar()">Entrar</button>
+  </div>
+</div>
+TYPE html>
 <html lang="pt-BR">
 <head>
 <!-- Google tag (gtag.js) -->

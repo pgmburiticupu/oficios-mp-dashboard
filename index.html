@@ -148,9 +148,8 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
     </select>
     <div id="novo-acesso-box" style="display:none">
       <label>Seu nome completo</label>
-      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..."/>
-      <label>Palavra-chave de cadastro</label>
-      <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()"/>
+      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..." onkeydown="if(event.key==='Enter')doIdentificar()"/>
+      <p style="font-size:12px;color:#6b7280;margin-top:-8px;margin-bottom:8px">Apos entrar, solicite ao administrador para adicionar seu nome permanentemente.</p>
     </div>
     <div class="id-error" id="id-error"></div>
     <button class="btn-identificar" onclick="doIdentificar()">Entrar</button>
@@ -297,9 +296,7 @@ function doIdentificar(){
   err.style.display='none';
   if(sel.value==='__novo__'){
     var novoNome=document.getElementById('id-novo-nome').value.trim();
-    var chave=document.getElementById('id-chave').value;
-    if(!novoNome){err.style.display='block';err.textContent='Digite seu nome.';return;}
-    if(chave!==CHAVE){err.style.display='block';err.textContent='Palavra-chave incorreta.';document.getElementById('id-chave').value='';return;}
+    if(!novoNome){err.style.display='block';err.textContent='Digite seu nome completo.';return;}
     entrarComNome(novoNome,true);
   } else {
     var nome=sel.value;

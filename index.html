@@ -126,9 +126,9 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 <div id="id-screen">
   <div class="id-box">
     <h2>Identificacao do Servidor</h2>
-    <p>Para continuar, informe seu nome e a palavra-chave de acesso.</p>
+    <p>Selecione seu nome para continuar. Novo servidor? Clique em "Criar acesso".</p>
     <label>Seu nome</label>
-    <select id="id-nome" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px;color:#374151;background:white">
+    <select id="id-nome" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:8px;color:#374151;background:white" onchange="toggleNovoAcesso()">
       <option value="">Selecione seu nome...</option>
       <option>Alexandre</option>
       <option>Bruno</option>
@@ -141,11 +141,16 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
       <option>Romulo</option>
       <option>Ronny</option>
       <option>Whesley</option>
+      <option value="__novo__">+ Criar novo acesso</option>
     </select>
-    <label>Palavra-chave</label>
-    <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()"/>
-    <div class="id-error" id="id-error">Palavra-chave incorreta. Tente novamente.</div>
-    <button class="btn-identificar" onclick="doIdentificar()">Confirmar e Entrar</button>
+    <div id="novo-acesso-box" style="display:none">
+      <label style="margin-top:8px">Seu nome completo</label>
+      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..." style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px"/>
+      <label>Palavra-chave de cadastro</label>
+      <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px"/>
+    </div>
+    <div class="id-error" id="id-error"></div>
+    <button class="btn-identificar" onclick="doIdentificar()">Entrar</button>
   </div>
 </div>
 
@@ -380,29 +385,41 @@ async function tgNum(id,num,usado,prefix){
 var CHAVE = 'Senha123';
 var GA_ID = 'G-9XPY49NV0Z';
 
+function toggleNovoAcesso() {
+  var sel = document.getElementById('id-nome');
+  var box = document.getElementById('novo-acesso-box');
+  box.style.display = sel.value === '__novo__' ? 'block' : 'none';
+}
+
 function doIdentificar() {
-  var nome = document.getElementById('id-nome').value.trim();
-  var chave = document.getElementById('id-chave').value;
+  var sel = document.getElementById('id-nome');
   var err = document.getElementById('id-error');
+  err.style.display = 'none';
+  // Novo acesso
+  if (sel.value === '__novo__') {
+    var novoNome = document.getElementById('id-novo-nome').value.trim();
+    var chave = document.getElementById('id-chave').value;
+    if (!novoNome) { err.style.display='block'; err.textContent='Digite seu nome.'; return; }
+    if (chave !== CHAVE) { err.style.display='block'; err.textContent='Palavra-chave incorreta.'; document.getElementById('id-chave').value=''; return; }
+    entrarComNome(novoNome, true);
+    return;
+  }
+  // Servidor da lista
+  var nome = sel.value;
   if (!nome) { err.style.display='block'; err.textContent='Selecione seu nome.'; return; }
-  if (chave !== CHAVE) { err.style.display='block'; err.textContent='Palavra-chave incorreta. Tente novamente.'; document.getElementById('id-chave').value=''; document.getElementById('id-chave').focus(); return; }
-  // Salvar identificacao permanente e sessao
+  entrarComNome(nome, false);
+}
+
+function entrarComNome(nome, isNovo) {
   localStorage.setItem('pgm_nome', nome);
   localStorage.setItem('pgm_identificado', 'ok');
   sessionStorage.setItem('pgm_id_sessao', 'ok');
-  // Registrar no Google Sheets
-  registrarNoSheets(nome);
-  // Registrar no Google Analytics com User ID
+  registrarNoSheets(nome, isNovo ? 'Novo cadastro' : 'Acesso');
   if (typeof gtag !== 'undefined') {
-    gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
-    gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });
-    gtag('event', 'login', {
-      method: 'palavra_chave',
-      servidor: nome,
-      nome_servidor: nome
-    });
+    gtag('config', GA_ID, { user_id: nome });
+    gtag('set', 'user_properties', { servidor: nome });
+    gtag('event', 'login', { servidor: nome });
   }
-  // Fechar tela e mostrar badge
   document.getElementById('id-screen').classList.remove('show');
   mostrarBadge(nome);
   loadOf();
@@ -411,23 +428,15 @@ function doIdentificar() {
 function mostrarBadge(nome) {
   function _set() {
     var badge = document.getElementById('user-badge');
-    if (badge) {
-      badge.innerHTML = '&#128100; <span>' + nome + '</span>';
-      badge.style.display = 'flex';
-    }
+    if (badge) { badge.innerHTML = '&#128100; <span>' + nome + '</span>'; badge.style.display='flex'; }
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _set);
-  } else {
-    _set();
-    // Tentar novamente apos 500ms caso o header ainda nao tenha renderizado
-    setTimeout(_set, 500);
-  }
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', _set); }
+  else { _set(); setTimeout(_set, 500); }
 }
 
 function checkIdentificacao() {
   var nome = localStorage.getItem('pgm_nome');
-  // Sempre mostrar tela de identificacao - preencher nome se ja conhecido
+  // Sempre pedir identificacao - preencher nome se ja conhecido
   if (nome) {
     var sel = document.getElementById('id-nome');
     if (sel) {
@@ -437,14 +446,6 @@ function checkIdentificacao() {
     }
   }
   document.getElementById('id-screen').classList.add('show');
-}
-
-function registrarNoSheets(nome) {
-  try {
-    var disp = /Mobi|Android/i.test(navigator.userAgent) ? 'Celular' : 'Computador';
-    var url = 'https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8eHp_HDO4-JwQhe5h7mF8QeiZHkXMPo08drUZdBuow/exec?servidor=' + encodeURIComponent(nome) + '&dispositivo=' + encodeURIComponent(disp);
-    fetch(url, { method: 'GET', mode: 'no-cors' });
-  } catch(e) { console.log('Sheets erro:', e); }
 }
 
 checkAuth();

@@ -415,17 +415,18 @@ function checkIdentificacao() {
   var nome = localStorage.getItem('pgm_nome');
   var ok = localStorage.getItem('pgm_identificado');
   var sessaoOk = sessionStorage.getItem('pgm_id_sessao');
-  if (nome && ok === 'ok' && sessaoOk === 'ok') {
-    // Ja identificado nesta sessao
+  if (nome && ok === 'ok') {
+    // Ja identificado - mostrar badge sempre
+    mostrarBadge(nome);
     if (typeof gtag !== 'undefined') {
       gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
       gtag('set', 'user_properties', { servidor: nome, nome_servidor: nome });
-      gtag('event', 'acesso', {
-        servidor: nome,
-        nome_servidor: nome
-      });
+      if (!sessaoOk) {
+        // Novo acesso (nova sessao) - registrar evento
+        gtag('event', 'acesso', { servidor: nome, nome_servidor: nome });
+        sessionStorage.setItem('pgm_id_sessao', 'ok');
+      }
     }
-    mostrarBadge(nome);
     loadOf();
   } else {
     // Mostrar tela de identificacao - preencher nome se ja conhecido

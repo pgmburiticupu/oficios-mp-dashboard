@@ -4,243 +4,17 @@
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPY49NV0Z"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-9XPY49NV0Z');
-</script>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Controle de Oficios - PGM</title><!-- v2 -->
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#f4f6f9;color:#1a1a2e}
-header{background:#1a1a2e;color:white;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-header h1{font-size:18px;font-weight:600}
-.subtitle{font-size:12px;opacity:.6;margin-top:2px}
-#last-update{font-size:11px;opacity:.6}
-.tabs{display:flex;background:#111827;padding:0 32px;overflow-x:auto}
-.tab-btn{padding:12px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
-.tab-btn.active{color:white;border-bottom-color:#60a5fa}
-.container{max-width:1200px;margin:0 auto;padding:24px 20px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
-.card{background:white;border-radius:10px;padding:16px 18px;border:1px solid #e5e7eb}
-.card .label{font-size:12px;color:#6b7280;margin-bottom:6px}
-.card .value{font-size:28px;font-weight:700}
-.card.total .value{color:#1a1a2e}.card.atrasado .value{color:#b91c1c}.card.critico .value{color:#92400e}.card.ok .value{color:#1d6534}.card.usado .value{color:#1d6534}.card.livre .value{color:#1d4ed8}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.filter-btn{padding:6px 14px;border-radius:999px;border:1px solid #d1d5db;background:white;font-size:13px;cursor:pointer;color:#374151}
-.filter-btn.active{background:#1a1a2e;color:white;border-color:#1a1a2e}
-.table-wrap{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead{background:#1a1a2e;color:white}
-th{padding:12px 14px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap}
-td{padding:10px 14px;border-bottom:1px solid #f1f3f5;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#f9fafb}
-.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
-.badge-critico{background:#fee2e2;color:#991b1b}.badge-alto{background:#fef3c7;color:#92400e}.badge-atraso{background:#fff7ed;color:#9a3412}.badge-hoje{background:#ffedd5;color:#9a3412}.badge-avencer{background:#dbeafe;color:#1e40af}
-.dias-num{font-weight:700;font-size:14px}.dias-red{color:#b91c1c}.dias-amber{color:#92400e}.dias-blue{color:#1d4ed8}
-.resp{color:#6b7280;font-size:12px}
-.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
-.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:60px;color:#6b7280;font-size:14px}
-.spinner{width:20px;height:20px;border:2px solid #e5e7eb;border-top-color:#1a1a2e;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error-box{background:#fee2e2;color:#991b1b;padding:16px 20px;border-radius:8px;margin-bottom:20px;font-size:13px;display:none}
-.btn-resp{padding:4px 10px;border-radius:6px;border:1px solid #16a34a;background:white;color:#16a34a;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
-.btn-resp:hover{background:#16a34a;color:white}.btn-resp:disabled{opacity:.5;cursor:not-allowed}
-.success-row td{background:#f0fdf4!important;opacity:.7}
-.grid-nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;padding:4px}
-.num-cell{border-radius:8px;padding:10px 6px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}
-.num-cell.usado{background:#dcfce7;color:#15803d;border-color:#86efac}.num-cell.usado:hover{background:#bbf7d0;border-color:#4ade80}
-.num-cell.livre{background:#f1f5f9;color:#64748b;border-color:#e2e8f0}.num-cell.livre:hover{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
-.num-cell.saving{opacity:.5;cursor:not-allowed}
-footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
-#login-screen{position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:white;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.login-box h2{font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
-.login-box p{font-size:13px;color:#6b7280;margin-bottom:24px}
-.login-box label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
-.login-box input[type=text],.login-box input[type=password]{width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px}
-.login-box input:focus{border-color:#1a1a2e}
-.login-remember{display:flex;align-items:center;gap:8px;margin-top:-8px;margin-bottom:16px}
-.login-remember input{width:16px;height:16px;cursor:pointer;margin:0}
-.login-remember label{font-size:13px;color:#374151;font-weight:400;cursor:pointer;margin:0}
-.btn-entrar{width:100%;padding:12px;background:#1a1a2e;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.btn-entrar:hover{opacity:.85}
-.login-error{color:#b91c1c;font-size:13px;margin-bottom:12px;display:none}
-@media(max-width:600px){
-  header{padding:12px 16px}header h1{font-size:15px}
-  .tabs{padding:0 8px}.tab-btn{padding:10px 10px;font-size:11px}
-  .container{padding:16px 12px}
-  .cards{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
-  .card{padding:12px 14px}.card .value{font-size:22px}.card .label{font-size:11px}
-  .controls{gap:6px}.filter-btn{padding:5px 10px;font-size:12px}
-  #search-of{width:100%!important;margin-left:0!important;margin-top:6px}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{min-width:550px;font-size:12px}th,td{padding:8px 10px}
-  .btn-resp{padding:3px 8px;font-size:10px}
-  .grid-nums{grid-template-columns:repeat(auto-fill,minmax(55px,1fr));gap:6px}
-  .num-cell{padding:8px 4px;font-size:12px}
-  .login-box{padding:28px 20px;margin:16px}
-  small{display:none}
-}
-
-#id-screen{position:fixed;inset:0;background:rgba(26,26,46,.97);display:none;align-items:center;justify-content:center;z-index:9998}
-#id-screen.show{display:flex}
-.id-box{background:white;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.id-box h2{font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
-.id-box p{font-size:13px;color:#6b7280;margin-bottom:24px}
-.id-box label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
-.id-box input[type=text],.id-box input[type=password]{width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px}
-.id-box input:focus{border-color:#1a1a2e}
-.id-error{color:#b91c1c;font-size:13px;margin-bottom:12px;display:none}
-.btn-identificar{width:100%;padding:12px;background:#1a1a2e;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.btn-identificar:hover{opacity:.85}
-.user-badge{font-size:12px;color:white;opacity:.8;display:flex;align-items:center;gap:6px}
-.user-badge span{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:999px;font-weight:600}
-@media(max-width:600px){.id-box{padding:28px 20px;margin:16px}}
-
-</style>
-</head>
-<body>
-
-<div id="login-screen">
-  <div class="login-box">
-    <h2>Controle de Oficios - PGM</h2>
-    <p>PGM Buriticupu 2026 - Acesso restrito</p>
-    <label>Usuario</label>
-    <input type="text" id="login-user" placeholder="Digite o usuario" autocomplete="username"/>
-    <label>Senha</label>
-    <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <div class="login-remember">
-      <input type="checkbox" id="remember-me"/>
-      <label for="remember-me">Lembrar neste dispositivo</label>
-    </div>
-    <div class="login-error" id="login-error">Usuario ou senha incorretos.</div>
-    <button class="btn-entrar" onclick="doLogin()">Entrar</button>
-  </div>
-</div>
-
-
-<div id="id-screen">
-  <div class="id-box">
-    <h2>Identificacao do Servidor</h2>
-    <p>Selecione seu nome para continuar. Novo servidor? Clique em "Criar acesso".</p>
-    <label>Seu nome</label>
-    <select id="id-nome" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:8px;color:#374151;background:white" onchange="toggleNovoAcesso()">
-      <option value="">Selecione seu nome...</option>
-      <option>Alexandre</option>
-      <option>Bruno</option>
-      <option>Erika</option>
-      <option>Gabi</option>
-      <option>Gianice</option>
-      <option>Gustavo</option>
-      <option>Maria Eduarda</option>
-      <option>Matheus Felipe</option>
-      <option>Romulo</option>
-      <option>Ronny</option>
-      <option>Whesley</option>
-      <option value="__novo__">+ Criar novo acesso</option>
-    </select>
-    <div id="novo-acesso-box" style="display:none">
-      <label style="margin-top:8px">Seu nome completo</label>
-      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..." style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px"/>
-      <label>Palavra-chave de cadastro</label>
-      <input type="password" id="id-chave" placeholder="Palavra-chave secreta" onkeydown="if(event.key==='Enter')doIdentificar()" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;margin-bottom:16px"/>
-    </div>
-    <div class="id-error" id="id-error"></div>
-    <button class="btn-identificar" onclick="doIdentificar()">Entrar</button>
-  </div>
-</div>
-
-<header>
-  <div><h1>Controle de Oficios - PGM</h1><div class="subtitle">PGM Buriticupu 2026</div></div>
-  <div id="user-badge" class="user-badge" style="display:none"></div><div id="last-update">Carregando...</div>
-</header>
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('oficios',this)">Oficios MP 2026</button>
-  <button class="tab-btn" onclick="switchTab('numeros',this)">Num. Oficio-PGM</button>
-  <button class="tab-btn" onclick="switchTab('pareceres',this)">Num. Parecer-PGM</button>
-</div>
-
-<div id="tab-oficios">
-<div class="container">
-  <div id="error-box-1" class="error-box"></div>
-  <div class="cards">
-    <div class="card total"><div class="label">Total pendentes</div><div class="value" id="c-total">-</div></div>
-    <div class="card atrasado"><div class="label">Em atraso</div><div class="value" id="c-atraso">-</div></div>
-    <div class="card critico"><div class="label">Critico (&gt;30d)</div><div class="value" id="c-critico">-</div></div>
-    <div class="card ok"><div class="label">A vencer</div><div class="value" id="c-ok">-</div></div>
-  </div>
-  <div class="controls">
-    <button class="filter-btn active" onclick="filterOf('all',this)">Todos</button>
-    <button class="filter-btn" onclick="filterOf('critico',this)">Critico</button>
-    <button class="filter-btn" onclick="filterOf('alto',this)">Alto</button>
-    <button class="filter-btn" onclick="filterOf('atraso',this)">Em atraso</button>
-    <button class="filter-btn" onclick="filterOf('avencer',this)">A vencer</button>
-    <input type="text" id="search-of" placeholder="Buscar..." oninput="renderOf(afOf,this.value)" style="margin-left:auto;padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;width:200px;outline:none"/>
-  </div>
-  <div class="table-wrap">
-    <div class="loading" id="loading-of"><div class="spinner"></div> Carregando...</div>
-    <table id="table-of" style="display:none"><thead><tr><th>Oficio</th><th>Vencimento</th><th>Responsavel</th><th style="text-align:center">Dias</th><th style="text-align:center">Situacao</th><th style="text-align:center">Acao</th></tr></thead><tbody id="tbody-of"></tbody></table>
-    <div class="empty" id="empty-of" style="display:none">Nenhum resultado.</div>
-  </div>
-</div></div>
-
-<div id="tab-numeros" style="display:none">
-<div class="container">
-  <div id="error-box-2" class="error-box"></div>
-  <div class="cards">
-    <div class="card total"><div class="label">Total</div><div class="value" id="n2-total">-</div></div>
-    <div class="card usado"><div class="label">Usados</div><div class="value" id="n2-usado">-</div></div>
-    <div class="card livre"><div class="label">Disponiveis</div><div class="value" id="n2-livre">-</div></div>
-    <div class="card ok"><div class="label">Proximo livre</div><div class="value" id="n2-proximo" style="font-size:20px">-</div></div>
-  </div>
-  <div class="controls">
-    <button class="filter-btn active" onclick="fNum('num2','all',this)">Todos</button>
-    <button class="filter-btn" onclick="fNum('num2','livre',this)">Disponiveis</button>
-    <button class="filter-btn" onclick="fNum('num2','usado',this)">Usados</button>
-    <small style="color:#6b7280;font-size:12px;margin-left:8px">Verde=usado | Cinza=disponivel | Clique para alternar</small>
-  </div>
-  <div class="table-wrap" style="padding:16px">
-    <div class="loading" id="loading-num2"><div class="spinner"></div> Carregando...</div>
-    <div id="grid-num2" class="grid-nums" style="display:none"></div>
-    <div class="empty" id="empty-num2" style="display:none">Nenhum resultado.</div>
-  </div>
-</div></div>
-
-<div id="tab-pareceres" style="display:none">
-<div class="container">
-  <div id="error-box-3" class="error-box"></div>
-  <div class="cards">
-    <div class="card total"><div class="label">Total</div><div class="value" id="n3-total">-</div></div>
-    <div class="card usado"><div class="label">Usados</div><div class="value" id="n3-usado">-</div></div>
-    <div class="card livre"><div class="label">Disponiveis</div><div class="value" id="n3-livre">-</div></div>
-    <div class="card ok"><div class="label">Proximo livre</div><div class="value" id="n3-proximo" style="font-size:20px">-</div></div>
-  </div>
-  <div class="controls">
-    <button class="filter-btn active" onclick="fNum('num3','all',this)">Todos</button>
-    <button class="filter-btn" onclick="fNum('num3','livre',this)">Disponiveis</button>
-    <button class="filter-btn" onclick="fNum('num3','usado',this)">Usados</button>
-    <small style="color:#6b7280;font-size:12px;margin-left:8px">Verde=usado | Cinza=disponivel | Clique para alternar</small>
-  </div>
-  <div class="table-wrap" style="padding:16px">
-    <div class="loading" id="loading-num3"><div class="spinner"></div> Carregando...</div>
-    <div id="grid-num3" class="grid-nums" style="display:none"></div>
-    <div class="empty" id="empty-num3" style="display:none">Nenhum resultado.</div>
-  </div>
-</div></div>
-
-<footer>Fonte: Notion | Atualiza a cada carregamento</footer>
-
-<script>
 var T=atob('bnRuXzMzNjYzMDY3NzQ5OEtxS0NEckFZaERvMk92ZmtjSExCdGVacUVKWERVRURlZlU=');
 var D1='2e27d679a665812da9cbdabaab1fa104';
 var D2='36e7d679a6658120b0e2d3eb272755bd';
 var D3='36f7d679a6658161 9f26ed14687e0b9a'.split(' ').join('');
 var PROXY='https://notion-proxy.pgmburiticupu.workers.dev';
+var SHEETS='https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8eHp_HDO4-JwQhe5h7mF8QeiZHkXMPo08drUZdBuow/exec';
+var GA_ID='G-9XPY49NV0Z';
+var CHAVE='Senha123';
 var ofRows=[],num2Rows=[],num3Rows=[],afOf='all',afNum2='all',afNum3='all';
+
+// ===== LOGIN =====
 function doLogin(){
   var u=document.getElementById('login-user').value.trim().toLowerCase();
   var p=document.getElementById('login-pass').value;
@@ -251,16 +25,85 @@ function doLogin(){
     if(rem){localStorage.setItem('pgm_auth','ok');localStorage.setItem('pgm_user',u);}
     document.getElementById('login-screen').style.display='none';
     checkIdentificacao();
-  } else { err.style.display='block'; document.getElementById('login-pass').value=''; document.getElementById('login-pass').focus(); }
+  } else {
+    err.style.display='block';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass').focus();
+  }
 }
 function checkAuth(){
   if(localStorage.getItem('pgm_auth')==='ok'){
     document.getElementById('login-user').value=localStorage.getItem('pgm_user')||'';
     document.getElementById('remember-me').checked=true;
-    document.getElementById('login-screen').style.display='none'; loadOf(); return;
+    document.getElementById('login-screen').style.display='none';
+    checkIdentificacao();return;
   }
-  if(sessionStorage.getItem('pgm_auth')==='ok'){ document.getElementById('login-screen').style.display='none'; loadOf(); }
+  if(sessionStorage.getItem('pgm_auth')==='ok'){
+    document.getElementById('login-screen').style.display='none';
+    checkIdentificacao();
+  }
 }
+
+// ===== IDENTIFICACAO =====
+function toggleNovoAcesso(){
+  var sel=document.getElementById('id-nome');
+  var box=document.getElementById('novo-acesso-box');
+  if(box) box.style.display=sel.value==='__novo__'?'block':'none';
+}
+function doIdentificar(){
+  var sel=document.getElementById('id-nome');
+  var err=document.getElementById('id-error');
+  err.style.display='none';
+  if(sel.value==='__novo__'){
+    var novoNome=document.getElementById('id-novo-nome').value.trim();
+    var chave=document.getElementById('id-chave').value;
+    if(!novoNome){err.style.display='block';err.textContent='Digite seu nome.';return;}
+    if(chave!==CHAVE){err.style.display='block';err.textContent='Palavra-chave incorreta.';document.getElementById('id-chave').value='';return;}
+    entrarComNome(novoNome,true);
+  } else {
+    var nome=sel.value;
+    if(!nome){err.style.display='block';err.textContent='Selecione seu nome.';return;}
+    entrarComNome(nome,false);
+  }
+}
+function entrarComNome(nome,isNovo){
+  localStorage.setItem('pgm_nome',nome);
+  localStorage.setItem('pgm_identificado','ok');
+  sessionStorage.setItem('pgm_id_sessao','ok');
+  registrarNoSheets(nome,isNovo?'Novo cadastro':'Acesso','');
+  if(typeof gtag!=='undefined'){
+    gtag('config',GA_ID,{user_id:nome});
+    gtag('set','user_properties',{servidor:nome});
+    gtag('event','login',{servidor:nome});
+  }
+  document.getElementById('id-screen').classList.remove('show');
+  mostrarBadge(nome);
+  loadOf();
+}
+function checkIdentificacao(){
+  var nome=localStorage.getItem('pgm_nome');
+  if(nome){
+    var sel=document.getElementById('id-nome');
+    if(sel){for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===nome){sel.selectedIndex=i;break;}}}
+  }
+  document.getElementById('id-screen').classList.add('show');
+}
+function mostrarBadge(nome){
+  function _set(){
+    var b=document.getElementById('user-badge');
+    if(b){b.innerHTML='&#128100; <span>'+nome+'</span>';b.style.display='flex';}
+  }
+  _set(); setTimeout(_set,300); setTimeout(_set,800);
+}
+function registrarNoSheets(nome,acao,detalhe){
+  try{
+    var disp=/Mobi|Android/i.test(navigator.userAgent)?'Celular':'Computador';
+    var url=SHEETS+'?servidor='+encodeURIComponent(nome)+'&dispositivo='+encodeURIComponent(disp)+'&acao='+encodeURIComponent(acao||'Acesso')+'&detalhe='+encodeURIComponent(detalhe||'');
+    fetch(url,{method:'GET',mode:'no-cors'});
+  }catch(e){console.log('Sheets:',e);}
+}
+
+// ===== ABAS =====
 function switchTab(tab,btn){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
@@ -268,6 +111,8 @@ function switchTab(tab,btn){
   if(tab==='numeros'&&num2Rows.length===0)loadNums(D2,'num2','n2','error-box-2');
   if(tab==='pareceres'&&num3Rows.length===0)loadNums(D3,'num3','n3','error-box-3');
 }
+
+// ===== OFICIOS =====
 async function loadOf(){
   try{
     var today=new Date();today.setHours(0,0,0,0);
@@ -304,7 +149,7 @@ function renderOf(f,s){
   var tb=document.getElementById('tbody-of');
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
-  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(\'' +r.id+ '\',this)">Responder</button></td></tr>';}).join('');
+  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(''+r.id+'',this)">Responder</button></td></tr>';}).join('');
 }
 async function marcarOf(id,btn){
   if(!confirm('Marcar como respondido? A data de hoje sera registrada.'))return;
@@ -312,12 +157,15 @@ async function marcarOf(id,btn){
   var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',notionToken:T,pageId:id})});
   var d=await r.json();
   if(d.object==='error'){btn.disabled=false;btn.textContent='Responder';alert('Erro: '+d.message);return;}
-  var tr=document.getElementById('row-'+id);tr.classList.add('success-row');btn.textContent='Respondido!';btn.style.background='#16a34a';btn.style.color='white';
+  var tr=document.getElementById('row-'+id);
+  var tituloOf=tr&&tr.querySelector('a')?tr.querySelector('a').textContent:'Oficio';
   var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
-  var tituloOf=tr?tr.querySelector('td a')?tr.querySelector('td a').textContent:'Oficio':'Oficio';
   registrarNoSheets(nomeSrv,'Respondeu oficio',tituloOf);
+  tr.classList.add('success-row');btn.textContent='Respondido!';btn.style.background='#16a34a';btn.style.color='white';
   setTimeout(function(){ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
 }
+
+// ===== NUMEROS =====
 async function loadNums(dbId,prefix,cp,errId){
   try{
     var all=[],cursor;
@@ -368,7 +216,7 @@ function renderNums(rows,prefix,f){
   if(!fl.length){grid.style.display='none';empty.style.display='block';return;}
   grid.style.display='grid';empty.style.display='none';
   grid.innerHTML=fl.map(function(r){
-    return'<div class="num-cell '+(r.usado?'usado':'livre')+'" id="nc-'+r.id+'" onclick="tgNum(\'' +r.id+ '\','+r.n+','+r.usado+',\'' +prefix+ '\')">'+(r.usado?'&#x2705; ':'')+r.n+'</div>';
+    return'<div class="num-cell '+(r.usado?'usado':'livre')+'" id="nc-'+r.id+'" onclick="tgNum(''+r.id+'','+r.n+','+r.usado+',''+prefix+'')">'+(r.usado?'&#x2705; ':'')+r.n+'</div>';
   }).join('');
 }
 async function tgNum(id,num,usado,prefix){
@@ -379,80 +227,13 @@ async function tgNum(id,num,usado,prefix){
   var d=await r.json();
   if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'&#x2705; ':'')+num;el.onclick=function(){tgNum(id,num,usado,prefix);};alert('Erro: '+d.message);return;}
   var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
-  var tipoNum=prefix==='num2'?'Num. Oficio-PGM':'Num. Parecer-PGM';
-  var acaoNum=usado?'Desmarcou numero':'Marcou numero';
-  registrarNoSheets(nomeSrv,acaoNum+' ('+tipoNum+')',String(num));
+  var tipo=prefix==='num2'?'Num. Oficio-PGM':'Num. Parecer-PGM';
+  registrarNoSheets(nomeSrv,(usado?'Desmarcou':'Marcou')+' numero ('+tipo+')',String(num));
   var rows=prefix==='num2'?num2Rows:num3Rows;
   var row=rows.find(function(x){return x.id===id;});
   if(row){row.usado=!usado;row.data=usado?'':new Date().toISOString().split('T')[0];}
   rcNums(rows,prefix==='num2'?'n2':'n3');
   renderNums(rows,prefix,prefix==='num2'?afNum2:afNum3);
-}
-
-var CHAVE = 'Senha123';
-var GA_ID = 'G-9XPY49NV0Z';
-
-function toggleNovoAcesso() {
-  var sel = document.getElementById('id-nome');
-  var box = document.getElementById('novo-acesso-box');
-  box.style.display = sel.value === '__novo__' ? 'block' : 'none';
-}
-
-function doIdentificar() {
-  var sel = document.getElementById('id-nome');
-  var err = document.getElementById('id-error');
-  err.style.display = 'none';
-  // Novo acesso
-  if (sel.value === '__novo__') {
-    var novoNome = document.getElementById('id-novo-nome').value.trim();
-    var chave = document.getElementById('id-chave').value;
-    if (!novoNome) { err.style.display='block'; err.textContent='Digite seu nome.'; return; }
-    if (chave !== CHAVE) { err.style.display='block'; err.textContent='Palavra-chave incorreta.'; document.getElementById('id-chave').value=''; return; }
-    entrarComNome(novoNome, true);
-    return;
-  }
-  // Servidor da lista
-  var nome = sel.value;
-  if (!nome) { err.style.display='block'; err.textContent='Selecione seu nome.'; return; }
-  entrarComNome(nome, false);
-}
-
-function entrarComNome(nome, isNovo) {
-  localStorage.setItem('pgm_nome', nome);
-  localStorage.setItem('pgm_identificado', 'ok');
-  sessionStorage.setItem('pgm_id_sessao', 'ok');
-  registrarNoSheets(nome, isNovo ? 'Novo cadastro' : 'Acesso');
-  if (typeof gtag !== 'undefined') {
-    gtag('config', GA_ID, { user_id: nome });
-    gtag('set', 'user_properties', { servidor: nome });
-    gtag('event', 'login', { servidor: nome });
-  }
-  document.getElementById('id-screen').classList.remove('show');
-  mostrarBadge(nome);
-  setTimeout(function(){ loadOf(); }, 100);
-}
-
-function mostrarBadge(nome) {
-  function _set() {
-    var badge = document.getElementById('user-badge');
-    if (badge) { badge.innerHTML = '&#128100; <span>' + nome + '</span>'; badge.style.display='flex'; }
-  }
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', _set); }
-  else { _set(); setTimeout(_set, 500); }
-}
-
-function checkIdentificacao() {
-  var nome = localStorage.getItem('pgm_nome');
-  // Sempre pedir identificacao - preencher nome se ja conhecido
-  if (nome) {
-    var sel = document.getElementById('id-nome');
-    if (sel) {
-      for (var i=0; i<sel.options.length; i++) {
-        if (sel.options[i].value === nome) { sel.selectedIndex = i; break; }
-      }
-    }
-  }
-  document.getElementById('id-screen').classList.add('show');
 }
 
 checkAuth();

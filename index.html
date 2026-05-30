@@ -313,6 +313,9 @@ async function marcarOf(id,btn){
   var d=await r.json();
   if(d.object==='error'){btn.disabled=false;btn.textContent='Responder';alert('Erro: '+d.message);return;}
   var tr=document.getElementById('row-'+id);tr.classList.add('success-row');btn.textContent='Respondido!';btn.style.background='#16a34a';btn.style.color='white';
+  var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
+  var tituloOf=tr?tr.querySelector('td a')?tr.querySelector('td a').textContent:'Oficio':'Oficio';
+  registrarNoSheets(nomeSrv,'Respondeu oficio',tituloOf);
   setTimeout(function(){ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
 }
 async function loadNums(dbId,prefix,cp,errId){
@@ -375,6 +378,10 @@ async function tgNum(id,num,usado,prefix){
   var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:usado?'unmarkUsed':'markUsed',notionToken:T,pageId:id})});
   var d=await r.json();
   if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'&#x2705; ':'')+num;el.onclick=function(){tgNum(id,num,usado,prefix);};alert('Erro: '+d.message);return;}
+  var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
+  var tipoNum=prefix==='num2'?'Num. Oficio-PGM':'Num. Parecer-PGM';
+  var acaoNum=usado?'Desmarcou numero':'Marcou numero';
+  registrarNoSheets(nomeSrv,acaoNum+' ('+tipoNum+')',String(num));
   var rows=prefix==='num2'?num2Rows:num3Rows;
   var row=rows.find(function(x){return x.id===id;});
   if(row){row.usado=!usado;row.data=usado?'':new Date().toISOString().split('T')[0];}

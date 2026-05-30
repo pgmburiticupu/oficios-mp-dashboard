@@ -11,7 +11,7 @@
 </script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Controle de Oficios - PGM</title>
+<title>Controle de Oficios - PGM</title><!-- v2 -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#f4f6f9;color:#1a1a2e}
@@ -429,7 +429,7 @@ function entrarComNome(nome, isNovo) {
   }
   document.getElementById('id-screen').classList.remove('show');
   mostrarBadge(nome);
-  loadOf();
+  setTimeout(function(){ loadOf(); }, 100);
 }
 
 function mostrarBadge(nome) {

@@ -390,6 +390,8 @@ function doIdentificar() {
   localStorage.setItem('pgm_nome', nome);
   localStorage.setItem('pgm_identificado', 'ok');
   sessionStorage.setItem('pgm_id_sessao', 'ok');
+  // Registrar no Google Sheets
+  registrarNoSheets(nome);
   // Registrar no Google Analytics com User ID
   if (typeof gtag !== 'undefined') {
     gtag('config', 'G-9XPY49NV0Z', { user_id: nome });
@@ -452,6 +454,14 @@ function checkIdentificacao() {
     }
     document.getElementById('id-screen').classList.add('show');
   }
+}
+
+function registrarNoSheets(nome) {
+  try {
+    var disp = /Mobi|Android/i.test(navigator.userAgent) ? 'Celular' : 'Computador';
+    var url = 'https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8eHp_HDO4-JwQhe5h7mF8QeiZHkXMPo08drUZdBuow/exec?servidor=' + encodeURIComponent(nome) + '&dispositivo=' + encodeURIComponent(disp);
+    fetch(url, { method: 'GET', mode: 'no-cors' });
+  } catch(e) { console.log('Sheets erro:', e); }
 }
 
 checkAuth();

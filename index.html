@@ -407,8 +407,20 @@ function doIdentificar() {
 }
 
 function mostrarBadge(nome) {
-  var badge = document.getElementById('user-badge');
-  if (badge) { badge.innerHTML = '&#128100; <span>' + nome + '</span>'; badge.style.display='flex'; }
+  function _set() {
+    var badge = document.getElementById('user-badge');
+    if (badge) {
+      badge.innerHTML = '&#128100; <span>' + nome + '</span>';
+      badge.style.display = 'flex';
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _set);
+  } else {
+    _set();
+    // Tentar novamente apos 500ms caso o header ainda nao tenha renderizado
+    setTimeout(_set, 500);
+  }
 }
 
 function checkIdentificacao() {

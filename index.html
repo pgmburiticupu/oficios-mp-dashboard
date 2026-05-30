@@ -386,9 +386,10 @@ function doIdentificar() {
   var err = document.getElementById('id-error');
   if (!nome) { err.style.display='block'; err.textContent='Selecione seu nome.'; return; }
   if (chave !== CHAVE) { err.style.display='block'; err.textContent='Palavra-chave incorreta. Tente novamente.'; document.getElementById('id-chave').value=''; document.getElementById('id-chave').focus(); return; }
-  // Salvar identificacao permanente
+  // Salvar identificacao permanente e sessao
   localStorage.setItem('pgm_nome', nome);
   localStorage.setItem('pgm_identificado', 'ok');
+  sessionStorage.setItem('pgm_id_sessao', 'ok');
   // Registrar no Google Analytics
   if (typeof gtag !== 'undefined') {
     gtag('set', 'user_properties', { servidor: nome });
@@ -408,8 +409,9 @@ function mostrarBadge(nome) {
 function checkIdentificacao() {
   var nome = localStorage.getItem('pgm_nome');
   var ok = localStorage.getItem('pgm_identificado');
-  if (nome && ok === 'ok') {
-    // Ja identificado - registrar acesso no Analytics
+  var sessaoOk = sessionStorage.getItem('pgm_id_sessao');
+  if (nome && ok === 'ok' && sessaoOk === 'ok') {
+    // Ja identificado nesta sessao
     if (typeof gtag !== 'undefined') {
       gtag('set', 'user_properties', { servidor: nome });
       gtag('event', 'page_view', { servidor: nome });
@@ -417,7 +419,15 @@ function checkIdentificacao() {
     mostrarBadge(nome);
     loadOf();
   } else {
-    // Mostrar tela de identificacao
+    // Mostrar tela de identificacao - preencher nome se ja conhecido
+    if (nome) {
+      var sel = document.getElementById('id-nome');
+      if (sel) {
+        for (var i=0; i<sel.options.length; i++) {
+          if (sel.options[i].value === nome) { sel.selectedIndex = i; break; }
+        }
+      }
+    }
     document.getElementById('id-screen').classList.add('show');
   }
 }

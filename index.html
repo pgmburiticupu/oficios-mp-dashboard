@@ -380,7 +380,7 @@ function rcOf(){document.getElementById('c-total').textContent=ofRows.length;doc
 function filterOf(f,btn){document.querySelectorAll('#tab-oficios .filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');afOf=f;renderOf(f,document.getElementById('search-of').value);}
 function renderOf(f,s){
   var q=s.toLowerCase();
-  var fl=ofRows.filter(function(r){return(f==='all'||gcOf(r.d)===f)&&(!q||r.t.toLowerCase().includes(q)||r.r.toLowerCase().includes(q));});
+  var fl=ofRows.filter(function(r){return(f==='all'||gcOf(r.d)===f)&&(!q||r.t.toLowerCase().includes(q)||r.r.toLowerCase().includes(q));}).sort(function(a,b){var na=parseInt((a.t.match(/\d+/)||[0])[0]);var nb=parseInt((b.t.match(/\d+/)||[0])[0]);return na-nb;});
   var tb=document.getElementById('tbody-of');
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
@@ -475,3 +475,4 @@ checkAuth();
 </script>
 </body>
 </html>
+

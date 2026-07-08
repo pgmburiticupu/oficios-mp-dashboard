@@ -479,6 +479,13 @@ async function tgNum(id,num,usado,prefix){
 }
 
 checkAuth();
+// Atualizacao automatica a cada 5 minutos
+setInterval(function(){
+  if(localStorage.getItem('pgm_auth')==='ok'||sessionStorage.getItem('pgm_auth')==='ok'){
+    var tabAtiva=document.querySelector('.tab-btn.active');
+    if(tabAtiva&&tabAtiva.textContent.includes('Oficios'))loadOf();
+  }
+},5*60*1000);
 </script>
 </body>
 </html>

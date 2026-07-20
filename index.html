@@ -103,6 +103,18 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
   .login-box,.id-box{padding:28px 20px;margin:16px}
   small{display:none}
 }
+
+.status-badge{display:inline-block;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s}
+.status-distribuido{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+.status-recebido{background:#dbeafe;color:#1e40af;border-color:#60a5fa}
+.status-aguardando{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+.status-pendente{background:#e5e7eb;color:#374151;border-color:#9ca3af}
+.status-dropdown{position:relative;display:inline-block}
+.status-menu{display:none;position:absolute;background:white;border:1px solid #d1d5db;border-radius:6px;box-shadow:0 4px 6px rgba(0,0,0,.1);z-index:100;min-width:150px;top:100%;left:0;margin-top:4px}
+.status-menu.show{display:block}
+.status-option{padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f3f4f6}
+.status-option:last-child{border-bottom:none}
+.status-option:hover{background:#f9fafb}
 </style>
 </head>
 <body>
@@ -196,7 +208,7 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
   </div>
   <div class="table-wrap">
     <div class="loading" id="loading-of"><div class="spinner"></div> Carregando...</div>
-    <table id="table-of" style="display:none"><thead><tr><th>Oficio</th><th>Vencimento</th><th>Responsavel</th><th style="text-align:center">Dias</th><th style="text-align:center">Situacao</th><th style="text-align:center">Acao</th></tr></thead><tbody id="tbody-of"></tbody></table>
+    <table id="table-of" style="display:none"><thead><tr><th>Oficio</th><th>Vencimento</th><th>Responsavel</th><th style="text-align:center">Dias</th><th style="text-align:center">Situacao</th><th style="text-align:center">Status</th><th style="text-align:center">Acao</th></tr></thead><tbody id="tbody-of"></tbody></table>
     <div class="empty" id="empty-of" style="display:none">Nenhum resultado.</div>
   </div>
 </div></div>
@@ -259,6 +271,34 @@ var SHEETS='https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8
 var GA_ID='G-9XPY49NV0Z';
 var CHAVE='Senha123';
 var ofRows=[],num2Rows=[],num3Rows=[],afOf='all',afNum2='all',afNum3='all';
+var ofStatus=JSON.parse(localStorage.getItem('pgm_ofStatus')||'{}');
+
+function getStatusBadge(id){
+  var st=ofStatus[id]||'distribuido';
+  var cores={distribuido:'status-distribuido',recebido:'status-recebido',aguardando:'status-aguardando',pendente:'status-pendente'};
+  var nomes={distribuido:'Distribuido',recebido:'Recebido',aguardando:'Aguardando doc',pendente:'Pendente'};
+  return '<div class="status-dropdown" onclick="toggleStatusMenu(event,\''+id+'\')"><span class="status-badge '+cores[st]+'">'+nomes[st]+'</span><div class="status-menu" id="menu-'+id+'"><div class="status-option" onclick="setStatus(\''+id+'\',\'distribuido\')">Distribuido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'recebido\')">Recebido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'aguardando\')">Aguardando doc</div><div class="status-option" onclick="setStatus(\''+id+'\',\'pendente\')">Pendente</div></div></div>';
+}
+
+function toggleStatusMenu(e,id){
+  e.stopPropagation();
+  var menu=document.getElementById('menu-'+id);
+  if(menu)menu.classList.toggle('show');
+}
+
+function setStatus(id,status){
+  ofStatus[id]=status;
+  localStorage.setItem('pgm_ofStatus',JSON.stringify(ofStatus));
+  renderOf(afOf,document.getElementById('search-of').value);
+  var menus=document.querySelectorAll('.status-menu');
+  menus.forEach(function(m){m.classList.remove('show');});
+}
+
+document.addEventListener('click',function(){
+  var menus=document.querySelectorAll('.status-menu');
+  menus.forEach(function(m){m.classList.remove('show');});
+});
+
 
 // LOGIN
 function doLogin(){
@@ -391,7 +431,7 @@ function renderOf(f,s){
   var tb=document.getElementById('tbody-of');
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
-  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(\''+r.id+'\',this)">Responder</button></td></tr>';}).join('');
+  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center">'+getStatusBadge(r.id)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(\''+r.id+'\',this)">Responder</button></td></tr>';}).join('');
 }
 async function marcarOf(id,btn){
   if(!confirm('Marcar como respondido? A data de hoje sera registrada.'))return;
@@ -404,7 +444,7 @@ async function marcarOf(id,btn){
   var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
   registrarNoSheets(nomeSrv,'Respondeu oficio',tituloOf);
   tr.classList.add('success-row');btn.textContent='Respondido!';btn.style.background='#16a34a';btn.style.color='white';
-  setTimeout(function(){ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
+  setTimeout(function(){delete ofStatus[id];localStorage.setItem('pgm_ofStatus',JSON.stringify(ofStatus));ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
 }
 
 // NUMEROS

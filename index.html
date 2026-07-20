@@ -271,13 +271,13 @@ var SHEETS='https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8
 var GA_ID='G-9XPY49NV0Z';
 var CHAVE='Senha123';
 var ofRows=[],num2Rows=[],num3Rows=[],afOf='all',afNum2='all',afNum3='all';
-var ofStatus=JSON.parse(localStorage.getItem('pgm_ofStatus')||'{}');
 
-function getStatusBadge(id){
-  var st=ofStatus[id]||'distribuido';
-  var cores={distribuido:'status-distribuido',recebido:'status-recebido',aguardando:'status-aguardando',pendente:'status-pendente'};
-  var nomes={distribuido:'Distribuido',recebido:'Recebido',aguardando:'Aguardando doc',pendente:'Pendente'};
-  return '<div class="status-dropdown" onclick="toggleStatusMenu(event,\''+id+'\')"><span class="status-badge '+cores[st]+'">'+nomes[st]+'</span><div class="status-menu" id="menu-'+id+'"><div class="status-option" onclick="setStatus(\''+id+'\',\'distribuido\')">Distribuido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'recebido\')">Recebido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'aguardando\')">Aguardando doc</div><div class="status-option" onclick="setStatus(\''+id+'\',\'pendente\')">Pendente</div></div></div>';
+
+function getStatusBadge(id,sf){
+  var st=sf||'Distribuido';
+  var cores={'Distribuido':'status-distribuido','Recebido':'status-recebido','Aguardando documentacao':'status-aguardando','Pendente de resposta':'status-pendente'};
+  var cls=cores[st]||'status-distribuido';
+  return '<div class="status-dropdown" onclick="toggleStatusMenu(event,\''+id+'\')"><span class="status-badge '+cls+'">'+st+'</span><div class="status-menu" id="menu-'+id+'"><div class="status-option" onclick="setStatus(\''+id+'\',\'Distribuido\')">Distribuido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'Recebido\')">Recebido</div><div class="status-option" onclick="setStatus(\''+id+'\',\'Aguardando documentacao\')">Aguardando doc</div><div class="status-option" onclick="setStatus(\''+id+'\',\'Pendente de resposta\')">Pendente de resposta</div></div></div>';
 }
 
 function toggleStatusMenu(e,id){
@@ -287,11 +287,19 @@ function toggleStatusMenu(e,id){
 }
 
 function setStatus(id,status){
-  ofStatus[id]=status;
-  localStorage.setItem('pgm_ofStatus',JSON.stringify(ofStatus));
-  renderOf(afOf,document.getElementById('search-of').value);
+  // Fechar menus
   var menus=document.querySelectorAll('.status-menu');
   menus.forEach(function(m){m.classList.remove('show');});
+  // Atualizar localmente enquanto salva no Notion
+  var row=ofRows.find(function(r){return r.id===id;});
+  if(row)row.sf=status;
+  renderOf(afOf,document.getElementById('search-of').value);
+  // Salvar no Notion via proxy
+  fetch('https://api.notion.com/v1/pages/'+id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+T,'Notion-Version':'2022-06-28','Content-Type':'application/json'},
+    body:JSON.stringify({properties:{'Status Fluxo':{select:{name:status}}}})
+  }).catch(function(e){console.error('Erro ao salvar status:',e);});
 }
 
 document.addEventListener('click',function(){
@@ -408,7 +416,8 @@ async function loadOf(){
       var pd=pr?new Date(pr+'T00:00:00'):null;
       var da=pd?Math.floor((today-pd)/86400000):null;
       var resp=(pp['Responsavel']&&pp['Responsavel'].select&&pp['Responsavel'].select.name)||'';
-      return{id:pg.id,t:titulo||pg.id,p:pr,d:da,r:resp,u:pg.url};
+      var sf=(pp['Status Fluxo']&&pp['Status Fluxo'].select&&pp['Status Fluxo'].select.name)||'Distribuido';
+      return{id:pg.id,t:titulo||pg.id,p:pr,d:da,r:resp,u:pg.url,sf:sf};
     });
     rcOf();renderOf(afOf,'');
     document.getElementById('loading-of').style.display='none';
@@ -431,7 +440,7 @@ function renderOf(f,s){
   var tb=document.getElementById('tbody-of');
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
-  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center">'+getStatusBadge(r.id)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(\''+r.id+'\',this)">Responder</button></td></tr>';}).join('');
+  tb.innerHTML=fl.map(function(r){return'<tr id="row-'+r.id+'"><td><a href="'+r.u+'" target="_blank" style="color:#1a1a2e;text-decoration:none;font-weight:500">'+r.t+'</a></td><td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td><td class="resp">'+(r.r||'-')+'</td><td style="text-align:center">'+gdOf(r.d)+'</td><td style="text-align:center">'+gbOf(r.d)+'</td><td style="text-align:center">'+getStatusBadge(r.id,r.sf)+'</td><td style="text-align:center"><button class="btn-resp" onclick="marcarOf(\''+r.id+'\',this)">Responder</button></td></tr>';}).join('');
 }
 async function marcarOf(id,btn){
   if(!confirm('Marcar como respondido? A data de hoje sera registrada.'))return;
@@ -444,7 +453,7 @@ async function marcarOf(id,btn){
   var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
   registrarNoSheets(nomeSrv,'Respondeu oficio',tituloOf);
   tr.classList.add('success-row');btn.textContent='Respondido!';btn.style.background='#16a34a';btn.style.color='white';
-  setTimeout(function(){delete ofStatus[id];localStorage.setItem('pgm_ofStatus',JSON.stringify(ofStatus));ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
+  setTimeout(function(){ofRows=ofRows.filter(function(x){return x.id!==id;});rcOf();renderOf(afOf,document.getElementById('search-of').value);},2000);
 }
 
 // NUMEROS

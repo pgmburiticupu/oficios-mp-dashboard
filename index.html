@@ -110,7 +110,7 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 .status-aguardando{background:#fef3c7;color:#92400e;border-color:#fcd34d}
 .status-pendente{background:#e5e7eb;color:#374151;border-color:#9ca3af}
 .status-dropdown{position:relative;display:inline-block}
-.status-menu{display:none;position:absolute;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;white-space:nowrap;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:6px;gap:4px}
+.status-menu{display:none;position:fixed;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:99999;white-space:nowrap;padding:6px;gap:4px}
 .status-menu.show{display:flex;flex-wrap:wrap}
 .status-option{padding:6px 10px;cursor:pointer;font-size:11px;border-radius:6px;border:1px solid #e5e7eb;background:#f9fafb;white-space:nowrap}
 .status-option:hover{background:#e5e7eb}
@@ -281,10 +281,27 @@ function getStatusBadge(id,sf){
 
 function toggleStatusMenu(e,id){
   e.stopPropagation();
-  var menus=document.querySelectorAll('.status-menu');
-  menus.forEach(function(m){m.classList.remove('show');});
   var menu=document.getElementById('menu-'+id);
-  if(menu)menu.classList.toggle('show');
+  var wasOpen=menu&&menu.classList.contains('show');
+  document.querySelectorAll('.status-menu').forEach(function(m){m.classList.remove('show');});
+  if(!menu||wasOpen)return;
+  var badge=menu.parentNode.querySelector('.status-badge');
+  var r=badge.getBoundingClientRect();
+  menu.classList.add('show');
+  var mw=menu.offsetWidth,mh=menu.offsetHeight;
+  var vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;
+  // horizontal: centralizar no badge, com clamp nas bordas
+  var left=r.left+r.width/2-mw/2;
+  if(left<8)left=8;
+  if(left+mw>vw-8)left=vw-mw-8;
+  // vertical: acima se couber, senao abaixo, senao clamp
+  var top=r.top-mh-6;
+  if(top<8){
+    top=r.bottom+6;
+    if(top+mh>vh-8)top=Math.max(8,vh-mh-8);
+  }
+  menu.style.left=left+'px';
+  menu.style.top=top+'px';
 }
 
 function setStatus(id,status){
@@ -302,8 +319,13 @@ function setStatus(id,status){
 }
 
 document.addEventListener('click',function(){
-  var menus=document.querySelectorAll('.status-menu');
-  menus.forEach(function(m){m.classList.remove('show');});
+  document.querySelectorAll('.status-menu').forEach(function(m){m.classList.remove('show');});
+});
+window.addEventListener('scroll',function(){
+  document.querySelectorAll('.status-menu').forEach(function(m){m.classList.remove('show');});
+},true);
+window.addEventListener('resize',function(){
+  document.querySelectorAll('.status-menu').forEach(function(m){m.classList.remove('show');});
 });
 
 

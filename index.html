@@ -123,8 +123,8 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
   <div class="login-box">
     <h2>Controle de Oficios - PGM</h2>
     <p>PGM Buriticupu 2026 - Acesso restrito</p>
-    <label>Usuario</label>
-    <input type="text" id="login-user" placeholder="Digite o usuario" autocomplete="username"/>
+    <label>Email</label>
+    <input type="text" id="login-user" placeholder="seu.email@pgmburiticupu.ma.gov.br" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
     <label>Senha</label>
     <input type="password" id="login-pass" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <div class="login-remember">
@@ -133,40 +133,6 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
     </div>
     <div class="login-error" id="login-error">Usuario ou senha incorretos.</div>
     <button class="btn-entrar" onclick="doLogin()">Entrar</button>
-  </div>
-</div>
-
-<!-- TELA DE IDENTIFICACAO -->
-<div id="id-screen">
-  <div class="id-box">
-    <h2>Identificacao do Servidor</h2>
-    <p>Selecione seu nome para continuar. Novo servidor? Clique em "+ Criar novo acesso".</p>
-    <label>Seu nome</label>
-    <select id="id-nome" onchange="toggleNovoAcesso()">
-      <option value="">Selecione seu nome...</option>
-      <option>Benedito</option>
-      <option>Bruno</option>
-      <option>Erika</option>
-      <option>Gabi</option>
-      <option>Gianice</option>
-      <option>Gustavo</option>
-      <option>Jucelino Lindoso</option>
-      <option>Maria Eduarda</option>
-      <option>Matheus Felipe</option>
-      <option>Nadia Lice</option>
-      <option>Romulo</option>
-      <option>Ronny</option>
-      <option>Ruã Chaves</option>
-
-      <option value="__novo__">+ Criar novo acesso</option>
-    </select>
-    <div id="novo-acesso-box" style="display:none">
-      <label>Seu nome completo</label>
-      <input type="text" id="id-novo-nome" placeholder="Digite seu nome..." onkeydown="if(event.key==='Enter')doIdentificar()"/>
-      <p style="font-size:12px;color:#6b7280;margin-top:-8px;margin-bottom:8px">Apos entrar, solicite ao administrador para adicionar seu nome permanentemente.</p>
-    </div>
-    <div class="id-error" id="id-error"></div>
-    <button class="btn-identificar" onclick="doIdentificar()">Entrar</button>
   </div>
 </div>
 
@@ -263,6 +229,8 @@ var D1='2e27d679a665812da9cbdabaab1fa104';
 var D2='36e7d679a6658120b0e2d3eb272755bd';
 var D3='36f7d679a6658161 9f26ed14687e0b9a'.split(' ').join('');
 var PROXY='https://notion-proxy.pgmburiticupu.workers.dev';
+var SUPA_URL='https://khhejpxiyzbyrctaxdhm.supabase.co';
+var SUPA_KEY='sb_publishable_06TF_4sAy4Y15TWVF939BA_kMNhkbxq';
 var SHEETS='https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8eHp_HDO4-JwQhe5h7mF8QeiZHkXMPo08drUZdBuow/exec';
 var GA_ID='G-9XPY49NV0Z';
 var CHAVE='Senha123';
@@ -332,50 +300,54 @@ function doLogin(){
   var p=document.getElementById('login-pass').value;
   var rem=document.getElementById('remember-me').checked;
   var err=document.getElementById('login-error');
-  if(u==='pgm'&&p==='12345'){
-    sessionStorage.setItem('pgm_auth','ok');
-    if(rem){localStorage.setItem('pgm_auth','ok');localStorage.setItem('pgm_user',u);}
-    document.getElementById('login-screen').style.display='none';
-    checkIdentificacao();
-  } else {
+  err.style.display='none';
+  if(!u||!p){err.textContent='Preencha email e senha.';err.style.display='block';return;}
+  fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:u,password:p})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.access_token){
+      var nome=(d.user&&d.user.user_metadata&&d.user.user_metadata.nome)||u.split('@')[0];
+      sessionStorage.setItem('pgm_token',d.access_token);
+      localStorage.setItem('pgm_nome',nome);
+      if(rem){localStorage.setItem('pgm_token',d.access_token);}
+      document.getElementById('login-screen').style.display='none';
+      entrarComNome(nome,false);
+    } else {
+      err.textContent='Email ou senha incorretos.';
+      err.style.display='block';
+      document.getElementById('login-pass').value='';
+      document.getElementById('login-pass').focus();
+    }
+  }).catch(function(){
+    err.textContent='Erro de conexao. Tente novamente.';
     err.style.display='block';
-    document.getElementById('login-pass').value='';
-    document.getElementById('login-pass').focus();
-  }
+  });
 }
 function checkAuth(){
-  if(localStorage.getItem('pgm_auth')==='ok'){
-    document.getElementById('login-user').value=localStorage.getItem('pgm_user')||'';
-    document.getElementById('remember-me').checked=true;
-    document.getElementById('login-screen').style.display='none';
-    checkIdentificacao();return;
-  }
-  if(sessionStorage.getItem('pgm_auth')==='ok'){
-    document.getElementById('login-screen').style.display='none';
-    checkIdentificacao();
-  }
+  var tok=localStorage.getItem('pgm_token')||sessionStorage.getItem('pgm_token');
+  if(!tok)return;
+  fetch(SUPA_URL+'/auth/v1/user',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+tok}})
+    .then(function(r){if(!r.ok)throw 0;return r.json();})
+    .then(function(u){
+      var nome=(u.user_metadata&&u.user_metadata.nome)||localStorage.getItem('pgm_nome')||'Servidor';
+      document.getElementById('login-screen').style.display='none';
+      entrarComNome(nome,false);
+    })
+    .catch(function(){
+      localStorage.removeItem('pgm_token');
+      sessionStorage.removeItem('pgm_token');
+    });
+}
+function doLogout(){
+  if(!confirm('Deseja sair do sistema?'))return;
+  localStorage.removeItem('pgm_token');localStorage.removeItem('pgm_nome');
+  localStorage.removeItem('pgm_auth');localStorage.removeItem('pgm_user');
+  sessionStorage.clear();
+  location.reload();
 }
 
-// IDENTIFICACAO
-function toggleNovoAcesso(){
-  var sel=document.getElementById('id-nome');
-  var box=document.getElementById('novo-acesso-box');
-  if(box)box.style.display=sel.value==='__novo__'?'block':'none';
-}
-function doIdentificar(){
-  var sel=document.getElementById('id-nome');
-  var err=document.getElementById('id-error');
-  err.style.display='none';
-  if(sel.value==='__novo__'){
-    var novoNome=document.getElementById('id-novo-nome').value.trim();
-    if(!novoNome){err.style.display='block';err.textContent='Digite seu nome completo.';return;}
-    entrarComNome(novoNome,true);
-  } else {
-    var nome=sel.value;
-    if(!nome){err.style.display='block';err.textContent='Selecione seu nome.';return;}
-    entrarComNome(nome,false);
-  }
-}
 function entrarComNome(nome,isNovo){
   localStorage.setItem('pgm_nome',nome);
   registrarNoSheets(nome,isNovo?'Novo cadastro':'Acesso','');
@@ -384,23 +356,13 @@ function entrarComNome(nome,isNovo){
     gtag('set','user_properties',{servidor:nome});
     gtag('event','login',{servidor:nome});
   }
-  document.getElementById('id-screen').classList.remove('show');
+  var ids=document.getElementById('id-screen');if(ids)ids.classList.remove('show');
   mostrarBadge(nome);
   loadOf();
 }
-function checkIdentificacao(){
-  var nome=localStorage.getItem('pgm_nome');
-  var sel=document.getElementById('id-nome');
-  if(nome&&sel){
-    for(var i=0;i<sel.options.length;i++){
-      if(sel.options[i].value===nome){sel.selectedIndex=i;break;}
-    }
-  }
-  document.getElementById('id-screen').classList.add('show');
-}
 function mostrarBadge(nome){
   var b=document.getElementById('user-badge');
-  if(b){b.innerHTML='&#128100; <span>'+nome+'</span>';b.style.display='flex';}
+  if(b){b.innerHTML='&#128100; <span>'+nome+'</span> <span style="cursor:pointer;opacity:.7;margin-left:4px" onclick="doLogout()" title="Sair">&#10005;</span>';b.style.display='flex';}
 }
 function registrarNoSheets(nome,acao,detalhe){
   try{

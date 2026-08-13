@@ -413,6 +413,10 @@ async function loadOf(){
       allResults=allResults.concat(d.results);
       cursor=d.has_more?d.next_cursor:null;
     }while(cursor);
+    allResults=allResults.filter(function(pg){
+      var pp=pg.properties;
+      return pp['Responsavel']&&pp['Responsavel'].select&&pp['Responsavel'].select.name;
+    });
     ofRows=allResults.map(function(pg){
       var pp=pg.properties;
       var tKey=Object.keys(pp).find(function(k){return pp[k].type==='title';});

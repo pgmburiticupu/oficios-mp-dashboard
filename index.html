@@ -403,10 +403,17 @@ function switchTab(tab,btn){
 async function loadOf(){
   try{
     var today=new Date();today.setHours(0,0,0,0);
-    var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:D1,payload:{filter:{property:'Respondido',checkbox:{equals:false}},sorts:[{property:'Data do Vencimento',direction:'ascending'}],page_size:100}})});
-    var d=await r.json();
-    if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
-    ofRows=d.results.map(function(pg){
+    var allResults=[];var cursor=null;
+    do{
+      var payload={filter:{property:'Respondido',checkbox:{equals:false}},sorts:[{property:'Data do Vencimento',direction:'ascending'}],page_size:100};
+      if(cursor)payload.start_cursor=cursor;
+      var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:D1,payload:payload})});
+      var d=await r.json();
+      if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
+      allResults=allResults.concat(d.results);
+      cursor=d.has_more?d.next_cursor:null;
+    }while(cursor);
+    ofRows=allResults.map(function(pg){
       var pp=pg.properties;
       var tKey=Object.keys(pp).find(function(k){return pp[k].type==='title';});
       var titulo=tKey?(pp[tKey].title||[]).map(function(t){return t.plain_text;}).join(''):pg.id;

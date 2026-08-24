@@ -1,0 +1,23 @@
+name: Robo DJMA
+on:
+  schedule:
+    - cron: "0 11 * * 1-5"
+  workflow_dispatch:
+jobs:
+  robo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependencias
+        run: pip install playwright beautifulsoup4 supabase requests
+      - name: Instalar Chromium
+        run: playwright install chromium && playwright install-deps chromium
+      - name: Rodar robo DJMA
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/robo_djma.py

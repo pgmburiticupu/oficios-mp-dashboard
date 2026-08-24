@@ -850,14 +850,23 @@ async function processarPDF(input) {
     const blocos = textoCompleto.split(/(?=\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/);
     log_upload('  Blocos identificados: ' + blocos.length);
 
-    const padrao = new RegExp(TERMOS_PGM.join('|'), 'i');
+    // Normaliza texto removendo espaços/hífens/acentos para busca robusta
+    // (o PDF.js pode quebrar palavras: "Buriti cupu", "BURITI-CUPU" etc.)
+    const normalizar = (t) => t
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // remove acentos
+      .replace(/[\s\-]+/g, '')                            // remove espaços e hífens
+      .toUpperCase();
+
     const hoje = new Date().toISOString().slice(0,10);
     const encontrados = [];
     const vistos = new Set();
+    let comBuriticupu = 0;
 
     for (let idx = 0; idx < blocos.length; idx++) {
       const bloco = blocos[idx];
-      if (!padrao.test(bloco)) continue;
+      const blocoNorm = normalizar(bloco);
+      if (!blocoNorm.includes('BURITICUPU')) continue;
+      comBuriticupu++;
       const numero = extrairNumero(bloco);
       if (!numero || vistos.has(numero)) continue;
       vistos.add(numero);
@@ -882,7 +891,19 @@ async function processarPDF(input) {
     setProgress(80);
 
     if (encontrados.length === 0) {
-      log_upload('⚠️ Nenhum processo com "Buriticupu" encontrado neste PDF.', 'var(--yellow)');
+      if (comBuriticupu > 0) {
+        log_upload('⚠️ ' + comBuriticupu + ' bloco(s) mencionam Buriticupu, mas sem número de processo válido no formato CNJ.', 'var(--yellow)');
+      } else {
+        // Diagnóstico: procurar variações parciais no texto completo
+        const textoNorm = normalizar(textoCompleto);
+        if (textoNorm.includes('BURITICUPU')) {
+          log_upload('⚠️ "Buriticupu" existe no PDF mas ficou fora dos blocos de processo. Verifique o formato do diário.', 'var(--yellow)');
+        } else if (textoNorm.includes('BURITI')) {
+          log_upload('⚠️ Encontrado "Buriti..." mas não "Buriticupu" — pode ser outra comarca (Buriti, Buriti Bravo).', 'var(--yellow)');
+        } else {
+          log_upload('⚠️ Nenhuma menção a Buriticupu neste diário. Provavelmente não houve publicações da comarca nesta edição.', 'var(--yellow)');
+        }
+      }
       setProgress(100);
       input.value = '';
       return;

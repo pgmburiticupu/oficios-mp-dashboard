@@ -7,13 +7,6 @@
 
 <!-- PDF.js para leitura de PDF no navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
-  window.addEventListener('DOMContentLoaded', () => {
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
-  });
-</script>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -795,10 +788,27 @@ async function processarPDF(input) {
   setProgress(5);
 
   try {
+    if (typeof pdfjsLib === 'undefined') {
+      log_upload('❌ Biblioteca PDF.js não carregou. Recarregue a página (Ctrl+Shift+R).', 'var(--red)');
+      return;
+    }
+
+    // Configurar worker (obrigatório)
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    log_upload('⚙️ PDF.js v' + (pdfjsLib.version || '?') + ' pronto');
+
     const arrayBuffer = await file.arrayBuffer();
+    log_upload('📦 Arquivo carregado na memória (' + arrayBuffer.byteLength + ' bytes)');
     setProgress(10);
 
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    log_upload('🔧 Abrindo documento PDF...');
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    loadingTask.onProgress = (p) => {
+      if (p.total) setProgress(10 + Math.round((p.loaded / p.total) * 5));
+    };
+    const pdf = await loadingTask.promise;
+    log_upload('📖 Documento aberto com sucesso');
     log_upload('📋 Total de páginas: ' + pdf.numPages);
 
     let textoCompleto = '';

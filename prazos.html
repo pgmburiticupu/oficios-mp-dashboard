@@ -113,6 +113,42 @@
   .btn-cancel { padding: 8px 16px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: transparent; color: var(--sub); cursor: pointer; }
   .sugestao { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.15); border-radius: 7px; padding: 10px 12px; font-size: 11px; color: var(--green); margin-bottom: 14px; }
   .loading { opacity: .5; pointer-events: none; }
+
+  /* UPLOAD PDF */
+  .upload-banner {
+    background: linear-gradient(135deg, rgba(168,85,247,.08), rgba(79,127,255,.06));
+    border: 1px solid rgba(168,85,247,.25);
+    border-radius: 10px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .upload-area {
+    flex: 1; display: flex; align-items: center; gap: 12px;
+  }
+  .upload-icon { font-size: 22px; }
+  .upload-info { flex: 1; }
+  .upload-title { font-size: 13px; font-weight: 600; color: #c084fc; }
+  .upload-desc  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .upload-progress {
+    display: none; margin-top: 10px;
+    background: rgba(255,255,255,.06); border-radius: 4px; height: 4px; overflow: hidden;
+  }
+  .upload-progress-bar {
+    height: 100%; background: linear-gradient(90deg, #a855f7, #4f7fff);
+    border-radius: 4px; transition: width .3s;
+  }
+  .upload-log {
+    display: none; margin-top: 10px; font-size: 11px;
+    color: var(--sub); line-height: 1.8; font-family: 'JetBrains Mono', monospace;
+    max-height: 120px; overflow-y: auto;
+  }
+  .btn-upload {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(168,85,247,.15); border: 1px solid rgba(168,85,247,.3);
+    color: #c084fc; border-radius: 7px; padding: 8px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .btn-upload:hover { background: rgba(168,85,247,.25); }
+  #pdf-input { display: none; }
 </style>
 </head>
 <body>
@@ -194,6 +230,25 @@
         <div class="djma-meta" id="djma-banner-meta"></div>
       </div>
       <button class="btn-secondary" onclick="carregarDados()">↻ Atualizar</button>
+    </div>
+
+    <!-- UPLOAD PDF -->
+    <div class="upload-banner" id="upload-banner">
+      <div class="upload-area">
+        <div class="upload-icon">📄</div>
+        <div class="upload-info">
+          <div class="upload-title">Importar PDF do DJMA</div>
+          <div class="upload-desc">Baixe o PDF do Diário de Justiça no site do TJMA e importe aqui. O sistema extrai os processos da PGM automaticamente.</div>
+          <div class="upload-progress" id="upload-progress">
+            <div class="upload-progress-bar" id="upload-bar" style="width:0%"></div>
+          </div>
+          <div class="upload-log" id="upload-log"></div>
+        </div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" onchange="processarPDF(this)">
+      <button class="btn-upload" onclick="document.getElementById('pdf-input').click()">
+        📤 Importar PDF
+      </button>
     </div>
 
     <!-- KPIs -->
@@ -646,6 +701,169 @@ function abrirDetalhe(id) {
   // Por ora, exibe alert simples. Futuramente: modal de edição/atribuição.
   const venc = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
   alert(`Processo: ${p.numero_processo}\nÁrea: ${p.area}\nTipo: ${p.tipo_prazo}\nVencimento: ${venc}\nResponsável: ${p.responsavel || 'Não atribuído'}\nOrigem: ${p.origem}`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// LEITURA DE PDF DO DJMA
+// ══════════════════════════════════════════════════════════════
+
+const TERMOS_PGM = [
+  "PGM BURITICUPU", "PGM DE BURITICUPU", "PROCURADORIA.*BURITICUPU",
+  "MUNICÍPIO DE BURITICUPU", "MUNICIPIO DE BURITICUPU", "PREFEITURA.*BURITICUPU",
+  "BURITICUPU"
+];
+
+const PRAZOS_LEGAIS = {
+  "contestação": 15, "contrarrazões": 15, "recurso ordinário": 15,
+  "apelação": 15, "agravo": 15, "embargos": 15, "impugnação": 15,
+  "memoriais": 10, "manifestação": 15, "informações": 30,
+  "resposta": 15, "defesa": 15, "recurso": 15,
+};
+
+const AREA_MAP = {
+  "TRABALHO":       ["trabalhista", "trt", "clt", "reclamação trabalhista"],
+  "SAÚDE":          ["saúde", "sus", "medicamento", "internação"],
+  "TRIBUTÁRIO":     ["tributário", "imposto", "iss", "iptu", "execução fiscal"],
+  "ADMINISTRATIVO": ["administrativo", "licitação", "contrato", "servidor"],
+};
+
+const FERIADOS = ["2026-01-01","2026-04-03","2026-04-21","2026-05-01","2026-06-04",
+  "2026-07-28","2026-09-07","2026-10-12","2026-11-02","2026-11-15","2026-11-20","2026-12-25"];
+
+function diaUtil(d) {
+  const dia = d.getDay();
+  const iso = d.toISOString().slice(0,10);
+  return dia !== 0 && dia !== 6 && !FERIADOS.includes(iso);
+}
+
+function calcularVencimento(pub, tipo) {
+  const dias = PRAZOS_LEGAIS[tipo.toLowerCase()] || 15;
+  let inicio = new Date(pub); inicio.setDate(inicio.getDate() + 1);
+  while (!diaUtil(inicio)) inicio.setDate(inicio.getDate() + 1);
+  let contados = 0, atual = new Date(inicio);
+  while (contados < dias) {
+    if (diaUtil(atual)) contados++;
+    if (contados < dias) atual.setDate(atual.getDate() + 1);
+  }
+  while (!diaUtil(atual)) atual.setDate(atual.getDate() + 1);
+  return atual.toISOString().slice(0,10);
+}
+
+function detectarArea(texto) {
+  const t = texto.toLowerCase();
+  for (const [area, kws] of Object.entries(AREA_MAP)) {
+    if (kws.some(k => t.includes(k))) return area;
+  }
+  return "JUDICIAL";
+}
+
+function detectarTipo(texto) {
+  const t = texto.toLowerCase();
+  for (const tipo of Object.keys(PRAZOS_LEGAIS)) {
+    if (t.includes(tipo)) return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+  }
+  return "Manifestação";
+}
+
+function extrairNumero(texto) {
+  const m = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/);
+  return m ? m[0] : null;
+}
+
+function log_upload(msg, cor) {
+  const el = document.getElementById('upload-log');
+  el.style.display = 'block';
+  const linha = document.createElement('div');
+  linha.style.color = cor || 'var(--sub)';
+  linha.textContent = msg;
+  el.appendChild(linha);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setProgress(pct) {
+  document.getElementById('upload-progress').style.display = 'block';
+  document.getElementById('upload-bar').style.width = pct + '%';
+}
+
+async function processarPDF(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  document.getElementById('upload-log').innerHTML = '';
+  document.getElementById('upload-log').style.display = 'block';
+  log_upload('📄 Lendo PDF: ' + file.name);
+  setProgress(10);
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  log_upload('📋 Total de páginas: ' + pdf.numPages);
+  setProgress(20);
+
+  let textoCompleto = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
+    if (i % 10 === 0) setProgress(20 + Math.round((i / pdf.numPages) * 40));
+  }
+
+  log_upload('🔍 Buscando processos da PGM Buriticupu...');
+  setProgress(65);
+
+  // Dividir em blocos por número de processo
+  const blocos = textoCompleto.split(/(?=\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/);
+  const padrao = new RegExp(TERMOS_PGM.join('|'), 'i');
+  const hoje = new Date().toISOString().slice(0,10);
+  const encontrados = [];
+  const vistos = new Set();
+
+  for (const bloco of blocos) {
+    if (!padrao.test(bloco)) continue;
+    const numero = extrairNumero(bloco);
+    if (!numero || vistos.has(numero)) continue;
+    vistos.add(numero);
+
+    const tipo = detectarTipo(bloco);
+    const area = detectarArea(bloco);
+    const venc = calcularVencimento(new Date(hoje), tipo);
+    const dias = Math.round((new Date(venc) - new Date()) / 86400000);
+
+    encontrados.push({
+      numero_processo: numero, area, tipo_prazo: tipo,
+      data_publicacao: hoje, data_vencimento: venc,
+      dias_restantes: dias, status: dias < 0 ? 'vencido' : 'pendente',
+      responsavel: null, origem: 'DJMA',
+      texto_intimacao: bloco.slice(0, 500),
+    });
+    log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | vence ' + venc, 'var(--green)');
+  }
+
+  setProgress(80);
+
+  if (encontrados.length === 0) {
+    log_upload('⚠️ Nenhum processo da PGM Buriticupu encontrado neste PDF.', 'var(--yellow)');
+    setProgress(100);
+    return;
+  }
+
+  log_upload('💾 Salvando ' + encontrados.length + ' processo(s) no banco de dados...');
+
+  let salvos = 0;
+  for (const p of encontrados) {
+    try {
+      await insertSupabase('prazos_judiciais', p);
+      salvos++;
+    } catch(e) {
+      log_upload('  ⚠️ ' + p.numero_processo + ': ' + e.message, 'var(--yellow)');
+    }
+  }
+
+  setProgress(100);
+  log_upload('🎉 ' + salvos + ' prazo(s) importado(s) com sucesso!', 'var(--green)');
+
+  // Recarregar dados
+  setTimeout(() => carregarDados(), 1000);
+  input.value = '';
 }
 
 // ══════════════════════════════════════════════════════════════

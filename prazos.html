@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distribuidor de Prazos — PGM Buriticupu</title>
+
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:      #0f1117; --surface: #171b26; --card: #1e2333;
+    --border:  #2a3044; --accent:  #4f7fff; --accent-dim: #2a4499;
+    --green:   #22c55e; --yellow:  #f59e0b; --red: #ef4444;
+    --purple:  #a78bfa; --cyan:    #22d3ee;
+    --text:    #e2e8f0; --muted:   #64748b; --sub: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
+
+  /* TOPBAR */
+  .topbar { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .03em; margin-right: 32px; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .tabs { display: flex; gap: 2px; flex: 1; }
+  .tab { padding: 6px 16px; border-radius: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .tab.active { color: var(--text); background: rgba(79,127,255,.12); border: 1px solid rgba(79,127,255,.25); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .djma-status { display: flex; align-items: center; gap: 6px; background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.2); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--green); }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.4); } 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); } }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-dim); border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+
+  /* LAYOUT */
+  .layout { display: flex; height: calc(100vh - 52px); }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 10px; overflow-y: auto; }
+  .sgroup { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; padding: 10px 10px 6px; }
+  .sitem { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; color: var(--sub); cursor: pointer; font-size: 12px; transition: all .13s; }
+  .sitem:hover { background: rgba(255,255,255,.04); color: var(--text); }
+  .sitem.active { background: rgba(79,127,255,.1); color: var(--text); border: 1px solid rgba(79,127,255,.2); }
+  .sitem .cnt { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .area-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .divider { height: 1px; background: var(--border); margin: 8px 10px; }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .page-title { font-size: 18px; font-weight: 600; }
+  .page-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* BUTTONS */
+  .btn-primary { display: flex; align-items: center; gap: 7px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 0 20px rgba(79,127,255,.3); }
+  .btn-secondary { background: rgba(79,127,255,.15); border: 1px solid rgba(79,127,255,.25); color: var(--accent); border-radius: 7px; padding: 7px 14px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+  /* DJMA BANNER */
+  .djma-banner { background: linear-gradient(135deg, rgba(79,127,255,.08), rgba(34,211,238,.05)); border: 1px solid rgba(79,127,255,.2); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; }
+  .djma-info { flex: 1; }
+  .djma-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .djma-desc { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .djma-meta { display: flex; gap: 20px; margin-top: 8px; flex-wrap: wrap; }
+  .djma-stat { font-size: 11px; color: var(--muted); }
+  .djma-stat strong { color: var(--text); }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .kpi-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .kpi-val { font-size: 28px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .kpi-val.red { color: var(--red); } .kpi-val.yellow { color: var(--yellow); }
+  .kpi-val.green { color: var(--green); } .kpi-val.blue { color: var(--accent); }
+
+  /* TABLE */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 14px; font-weight: 600; }
+  .filters { display: flex; gap: 8px; }
+  .filter-btn { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); background: var(--card); color: var(--sub); cursor: pointer; }
+  .filter-btn.active { border-color: rgba(79,127,255,.4); background: rgba(79,127,255,.1); color: var(--accent); }
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: rgba(255,255,255,.025); border-bottom: 1px solid var(--border); }
+  th { padding: 11px 14px; text-align: left; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); cursor: pointer; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,.03); }
+  td { padding: 12px 14px; font-size: 12px; vertical-align: middle; }
+  .proc-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--sub); }
+  .area-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 500; }
+  .dias-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; }
+  .dias-red    { background: rgba(239,68,68,.15);  color: var(--red);    border: 1px solid rgba(239,68,68,.2); }
+  .dias-yellow { background: rgba(245,158,11,.12); color: var(--yellow); border: 1px solid rgba(245,158,11,.2); }
+  .dias-green  { background: rgba(34,197,94,.1);   color: var(--green);  border: 1px solid rgba(34,197,94,.15); }
+  .resp-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; }
+  .resp-avatar { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; }
+  .new-tag { background: rgba(34,211,238,.1); border: 1px solid rgba(34,211,238,.2); color: var(--cyan); border-radius: 3px; padding: 1px 5px; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .source-djma { font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .source-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .empty-state { text-align: center; padding: 48px; color: var(--muted); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 480px; max-width: 95vw; }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+  .form-field { margin-bottom: 14px; }
+  .form-label { font-size: 11px; color: var(--sub); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: var(--surface); color: var(--text); outline: none; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .btn-cancel { padding: 8px 16px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: transparent; color: var(--sub); cursor: pointer; }
+  .sugestao { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.15); border-radius: 7px; padding: 10px 12px; font-size: 11px; color: var(--green); margin-bottom: 14px; }
+  .loading { opacity: .5; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ TOPBAR -->
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>PGM Buriticupu</div>
+  <div class="tabs">
+    <div class="tab">Ofícios MP 2026</div>
+    <div class="tab active">Distribuidor de Prazos</div>
+    <div class="tab">Numeração</div>
+  </div>
+  <div class="topbar-right">
+    <div class="djma-status" id="djma-status-badge">
+      <div class="pulse"></div>
+      <span id="djma-ultima-sync">Carregando...</span>
+    </div>
+    <div class="avatar">RC</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ═══════════════════════════════════════════════ SIDEBAR -->
+  <div class="sidebar">
+    <div class="sgroup">Áreas</div>
+    <div class="sitem active" onclick="filtrarArea('')">
+      ☰ Todas as áreas <span class="cnt" id="cnt-total">—</span>
+    </div>
+    <div class="sitem" onclick="filtrarArea('TRABALHO')">
+      <div class="area-dot" style="background:#3b82f6"></div> Trabalho
+      <span class="cnt" id="cnt-trabalho">—</span>
+    </div>
+    <div class="sitem" onclick="filtrarArea('JUDICIAL')">
+      <div class="area-dot" style="background:#22c55e"></div> Judicial
+      <span class="cnt" id="cnt-judicial">—</span>
+    </div>
+    <div class="sitem" onclick="filtrarArea('ADMINISTRATIVO')">
+      <div class="area-dot" style="background:#f59e0b"></div> Administrativo
+      <span class="cnt" id="cnt-administrativo">—</span>
+    </div>
+    <div class="sitem" onclick="filtrarArea('TRIBUTÁRIO')">
+      <div class="area-dot" style="background:#a78bfa"></div> Tributário
+      <span class="cnt" id="cnt-tributario">—</span>
+    </div>
+    <div class="sitem" onclick="filtrarArea('SAÚDE')">
+      <div class="area-dot" style="background:#22d3ee"></div> Saúde
+      <span class="cnt" id="cnt-saude">—</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sgroup">Responsáveis</div>
+    <div id="sidebar-responsaveis"></div>
+
+    <div class="divider"></div>
+    <div class="sgroup">Filtros rápidos</div>
+    <div class="sitem" onclick="filtrarStatus('vencido')">🔴 Vencidos <span class="cnt" id="cnt-vencidos">—</span></div>
+    <div class="sitem" onclick="filtrarStatus('critico')">🟡 Críticos (≤5d) <span class="cnt" id="cnt-criticos">—</span></div>
+    <div class="sitem" onclick="filtrarOrigem('DJMA')">🤖 Via DJMA <span class="cnt" id="cnt-djma">—</span></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ MAIN -->
+  <div class="main">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Distribuidor de Prazos Judiciais</div>
+        <div class="page-sub">Prazos capturados automaticamente do Diário de Justiça do Maranhão · DJMA</div>
+      </div>
+      <button class="btn-primary" onclick="abrirModal()">＋ Adicionar prazo manual</button>
+    </div>
+
+    <!-- BANNER DJMA -->
+    <div class="djma-banner">
+      <div style="font-size:22px">🤖</div>
+      <div class="djma-info">
+        <div class="djma-title" id="djma-banner-titulo">Verificando integração DJMA...</div>
+        <div class="djma-desc" id="djma-banner-desc"></div>
+        <div class="djma-meta" id="djma-banner-meta"></div>
+      </div>
+      <button class="btn-secondary" onclick="carregarDados()">↻ Atualizar</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Total abertos</div>
+        <div class="kpi-val blue" id="kpi-total">—</div>
+        <div class="kpi-sub" id="kpi-total-sub">carregando...</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Vencidos</div>
+        <div class="kpi-val red" id="kpi-vencidos">—</div>
+        <div class="kpi-sub">Atenção imediata</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Críticos (≤ 5 dias)</div>
+        <div class="kpi-val yellow" id="kpi-criticos">—</div>
+        <div class="kpi-sub">Vencendo esta semana</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">No prazo</div>
+        <div class="kpi-val green" id="kpi-no-prazo">—</div>
+        <div class="kpi-sub">Sem urgência</div>
+      </div>
+    </div>
+
+    <!-- TABELA -->
+    <div>
+      <div class="section-header">
+        <div class="section-title">Prazos ativos</div>
+        <div class="filters">
+          <button class="filter-btn active" onclick="filtrarStatus('',this)">Todos</button>
+          <button class="filter-btn" onclick="filtrarStatus('vencido',this)">Vencidos</button>
+          <button class="filter-btn" onclick="filtrarStatus('critico',this)">Críticos</button>
+          <button class="filter-btn" onclick="filtrarStatus('pendente',this)">Pendentes</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Processo</th>
+              <th>Área</th>
+              <th>Tipo de prazo</th>
+              <th>Vencimento</th>
+              <th>Dias restantes</th>
+              <th>Responsável</th>
+              <th>Origem</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-corpo">
+            <tr><td colspan="7" class="empty-state">Carregando prazos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ MODAL NOVO PRAZO -->
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Adicionar prazo manual</div>
+
+    <div class="form-field">
+      <label class="form-label">Número do processo (formato CNJ)</label>
+      <input class="form-input" id="f-processo" placeholder="0001234-56.2026.8.10.0014">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Área</label>
+        <select class="form-input" id="f-area" onchange="sugerirResponsavel()">
+          <option value="TRABALHO">Trabalho</option>
+          <option value="JUDICIAL">Judicial</option>
+          <option value="ADMINISTRATIVO">Administrativo</option>
+          <option value="TRIBUTÁRIO">Tributário</option>
+          <option value="SAÚDE">Saúde</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Tipo de prazo</label>
+        <select class="form-input" id="f-tipo">
+          <option>Contestação</option>
+          <option>Contrarrazões</option>
+          <option>Recurso ordinário</option>
+          <option>Apelação</option>
+          <option>Embargos</option>
+          <option>Impugnação</option>
+          <option>Memoriais</option>
+          <option>Manifestação</option>
+          <option>Informações</option>
+          <option>Defesa</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Data de vencimento</label>
+        <input class="form-input" id="f-vencimento" type="date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Responsável</label>
+        <select class="form-input" id="f-responsavel">
+          <option value="Ricardo">Ricardo</option>
+          <option value="Gianice">Gianice</option>
+          <option value="Gabi">Gabi</option>
+          <option value="Benedito">Benedito</option>
+          <option value="Alexandre">Alexandre</option>
+          <option value="Whesley">Whesley</option>
+          <option value="Eduardo">Eduardo</option>
+        </select>
+      </div>
+    </div>
+    <div class="sugestao" id="sugestao-box" style="display:none">
+      ✦ <span id="sugestao-texto"></span>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Observações (opcional)</label>
+      <input class="form-input" id="f-obs" placeholder="Informações adicionais...">
+    </div>
+    <div class="form-footer">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarPrazo()">Salvar prazo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIGURAÇÃO SUPABASE
+// Substitua com as suas credenciais do projeto Supabase
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://khhjpxiyzbyrctaxdhm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoaGVqcHhpeXpieXJjdGF4ZGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODczMjQsImV4cCI6MjEwMTI2MzMyNH0.rPKfe5-atm9oBNbg7IO4YeQRyXacwTpi418TTo-H944';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Estado da aplicação
+let todosPrazos = [];
+let filtroAtual = { area: '', status: '', origem: '' };
+
+// ── Cores por área
+const CORES_AREA = {
+  'TRABALHO':      { badge: 'badge-blue',   bg: '#3b82f6' },
+  'JUDICIAL':      { badge: 'badge-green',  bg: '#22c55e' },
+  'ADMINISTRATIVO':{ badge: 'badge-yellow', bg: '#f59e0b' },
+  'TRIBUTÁRIO':    { badge: 'badge-purple', bg: '#a78bfa' },
+  'SAÚDE':         { badge: 'badge-cyan',   bg: '#22d3ee' },
+};
+
+// Estilos de badge (devem estar no CSS ou inline aqui)
+const BADGE_STYLES = {
+  'badge-blue':   'background:rgba(59,130,246,.1);color:#7da8ff',
+  'badge-green':  'background:rgba(34,197,94,.1);color:#4ade80',
+  'badge-yellow': 'background:rgba(245,158,11,.1);color:#fbbf24',
+  'badge-purple': 'background:rgba(167,139,250,.1);color:#c4b5fd',
+  'badge-cyan':   'background:rgba(34,211,238,.1);color:#67e8f9',
+};
+
+const CORES_RESP = {
+  'Ricardo': '#2a4499', 'Gianice': '#065f46', 'Gabi': '#7c2d12',
+  'Benedito': '#5b21b6', 'Alexandre': '#1e3a5f', 'Whesley': '#7f1d1d',
+  'Eduardo': '#1a3a2a',
+};
+
+// ══════════════════════════════════════════════════════════════
+// CARREGAR DADOS DO SUPABASE
+// ══════════════════════════════════════════════════════════════
+async function carregarDados() {
+  try {
+    const { data, error } = await db
+      .from('prazos_judiciais')
+      .select('*')
+      .neq('status', 'concluido')
+      .order('data_vencimento', { ascending: true });
+
+    if (error) throw error;
+
+    todosPrazos = data || [];
+    atualizarInterface();
+  } catch (err) {
+    console.error('Erro ao carregar dados:', err);
+    document.getElementById('tabela-corpo').innerHTML =
+      `<tr><td colspan="7" class="empty-state" style="color:var(--red)">Erro ao conectar ao Supabase. Verifique as credenciais.</td></tr>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ATUALIZAR INTERFACE
+// ══════════════════════════════════════════════════════════════
+function atualizarInterface() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  // Calcular dias restantes em tempo real
+  todosPrazos.forEach(p => {
+    const venc = new Date(p.data_vencimento + 'T00:00:00');
+    p._dias = Math.round((venc - hoje) / 86400000);
+  });
+
+  // KPIs
+  const total    = todosPrazos.length;
+  const vencidos = todosPrazos.filter(p => p._dias < 0).length;
+  const criticos = todosPrazos.filter(p => p._dias >= 0 && p._dias <= 5).length;
+  const noPrazo  = total - vencidos - criticos;
+  const djmaHoje = todosPrazos.filter(p => p.data_publicacao === new Date().toISOString().slice(0,10) && p.origem === 'DJMA').length;
+
+  document.getElementById('kpi-total').textContent    = total;
+  document.getElementById('kpi-vencidos').textContent  = vencidos;
+  document.getElementById('kpi-criticos').textContent  = criticos;
+  document.getElementById('kpi-no-prazo').textContent  = noPrazo;
+  document.getElementById('kpi-total-sub').textContent = `+${djmaHoje} hoje via DJMA`;
+
+  // Contadores sidebar — áreas
+  const areas = ['TRABALHO','JUDICIAL','ADMINISTRATIVO','TRIBUTÁRIO','SAÚDE'];
+  const ids   = ['trabalho','judicial','administrativo','tributario','saude'];
+  document.getElementById('cnt-total').textContent = total;
+  areas.forEach((a, i) => {
+    document.getElementById('cnt-' + ids[i]).textContent =
+      todosPrazos.filter(p => p.area === a).length;
+  });
+
+  // Contadores sidebar — status rápido
+  document.getElementById('cnt-vencidos').textContent = vencidos;
+  document.getElementById('cnt-criticos').textContent = criticos;
+  document.getElementById('cnt-djma').textContent = todosPrazos.filter(p => p.origem === 'DJMA').length;
+
+  // Sidebar responsáveis
+  const respCnts = {};
+  todosPrazos.forEach(p => { if (p.responsavel) respCnts[p.responsavel] = (respCnts[p.responsavel]||0)+1; });
+  const respHtml = Object.entries(respCnts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([nome,cnt]) => `<div class="sitem" onclick="filtrarResp('${nome}')">👤 ${nome}<span class="cnt">${cnt}</span></div>`)
+    .join('');
+  document.getElementById('sidebar-responsaveis').innerHTML = respHtml;
+
+  // Banner DJMA
+  const agora = new Date().toLocaleString('pt-BR');
+  document.getElementById('djma-banner-titulo').textContent = `Integração DJMA ativa · Última atualização: ${agora}`;
+  document.getElementById('djma-banner-desc').textContent = `Exibindo ${total} prazo(s) ativos. O robô roda automaticamente todo dia útil às 8h.`;
+  document.getElementById('djma-banner-meta').innerHTML =
+    `<div class="djma-stat"><strong>${vencidos}</strong> vencidos</div>
+     <div class="djma-stat"><strong>${criticos}</strong> críticos</div>
+     <div class="djma-stat"><strong>${noPrazo}</strong> no prazo</div>
+     <div class="djma-stat">Próxima leitura: <strong>amanhã às 08h</strong></div>`;
+  document.getElementById('djma-ultima-sync').textContent = `DJMA · ${new Date().toLocaleDateString('pt-BR')}`;
+
+  // Renderizar tabela
+  renderizarTabela();
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDERIZAR TABELA
+// ══════════════════════════════════════════════════════════════
+function renderizarTabela() {
+  let prazos = todosPrazos;
+
+  // Aplicar filtros
+  if (filtroAtual.area)    prazos = prazos.filter(p => p.area === filtroAtual.area);
+  if (filtroAtual.origem)  prazos = prazos.filter(p => p.origem === filtroAtual.origem);
+  if (filtroAtual.resp)    prazos = prazos.filter(p => p.responsavel === filtroAtual.resp);
+  if (filtroAtual.status === 'vencido')   prazos = prazos.filter(p => p._dias < 0);
+  if (filtroAtual.status === 'critico')   prazos = prazos.filter(p => p._dias >= 0 && p._dias <= 5);
+  if (filtroAtual.status === 'pendente')  prazos = prazos.filter(p => p._dias > 5);
+
+  const hoje = new Date().toISOString().slice(0,10);
+
+  if (!prazos.length) {
+    document.getElementById('tabela-corpo').innerHTML =
+      '<tr><td colspan="7" class="empty-state">Nenhum prazo encontrado para este filtro.</td></tr>';
+    return;
+  }
+
+  const rows = prazos.map(p => {
+    const dias = p._dias;
+    const isNovo = p.data_publicacao === hoje;
+    const cores = CORES_AREA[p.area] || { badge: 'badge-green', bg: '#22c55e' };
+    const badgeStyle = BADGE_STYLES[cores.badge] || '';
+
+    const diasChip = dias < 0
+      ? `<span class="dias-chip dias-red">● ${dias} dias</span>`
+      : dias <= 5
+        ? `<span class="dias-chip dias-yellow">⚠ ${dias} dias</span>`
+        : `<span class="dias-chip dias-green">✓ ${dias} dias</span>`;
+
+    const respHtml = p.responsavel
+      ? `<div class="resp-chip">
+           <div class="resp-avatar" style="background:${CORES_RESP[p.responsavel]||'#334155'}">${p.responsavel.slice(0,2).toUpperCase()}</div>
+           ${p.responsavel}
+         </div>`
+      : `<span style="color:var(--muted);font-style:italic;font-size:11px">Não atribuído</span>`;
+
+    const origemHtml = p.origem === 'DJMA'
+      ? `<div class="source-djma"><div class="source-dot"></div> DJMA auto</div>`
+      : `<span style="font-size:10px;color:var(--muted)">Manual</span>`;
+
+    const vencStr = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
+
+    return `<tr onclick="abrirDetalhe('${p.id}')">
+      <td>
+        <div class="proc-num">${p.numero_processo}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          Município de Buriticupu ${isNovo ? '<span class="new-tag">novo</span>' : ''}
+        </div>
+      </td>
+      <td><span class="area-badge" style="${badgeStyle}">${p.area}</span></td>
+      <td>${p.tipo_prazo}</td>
+      <td>${vencStr}</td>
+      <td>${diasChip}</td>
+      <td>${respHtml}</td>
+      <td>${origemHtml}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabela-corpo').innerHTML = rows;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FILTROS
+// ══════════════════════════════════════════════════════════════
+function filtrarArea(area) {
+  filtroAtual = { ...filtroAtual, area, resp: '', status: '' };
+  document.querySelectorAll('.sitem').forEach(el => el.classList.remove('active'));
+  event.currentTarget?.classList.add('active');
+  renderizarTabela();
+}
+
+function filtrarStatus(status, btn) {
+  filtroAtual = { ...filtroAtual, status };
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  renderizarTabela();
+}
+
+function filtrarOrigem(origem) {
+  filtroAtual = { ...filtroAtual, origem };
+  renderizarTabela();
+}
+
+function filtrarResp(resp) {
+  filtroAtual = { ...filtroAtual, resp };
+  renderizarTabela();
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL — NOVO PRAZO
+// ══════════════════════════════════════════════════════════════
+function abrirModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  // Preencher data padrão (30 dias à frente)
+  const d = new Date(); d.setDate(d.getDate() + 30);
+  document.getElementById('f-vencimento').value = d.toISOString().slice(0,10);
+  sugerirResponsavel();
+}
+
+function fecharModal(event) {
+  if (!event || event.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
+
+function sugerirResponsavel() {
+  const area = document.getElementById('f-area').value;
+  const cargaPorArea = {};
+  todosPrazos
+    .filter(p => p.area === area && p.responsavel)
+    .forEach(p => { cargaPorArea[p.responsavel] = (cargaPorArea[p.responsavel]||0)+1; });
+
+  if (!Object.keys(cargaPorArea).length) {
+    document.getElementById('sugestao-box').style.display = 'none';
+    return;
+  }
+
+  const [melhor, carga] = Object.entries(cargaPorArea).sort((a,b) => a[1]-b[1])[0];
+  const media = (Object.values(cargaPorArea).reduce((s,v)=>s+v,0) / Object.values(cargaPorArea).length).toFixed(1);
+
+  document.getElementById('f-responsavel').value = melhor;
+  document.getElementById('sugestao-texto').textContent =
+    `Sugestão: ${melhor} tem menos prazos em ${area} (${carga} vs. média ${media})`;
+  document.getElementById('sugestao-box').style.display = 'flex';
+}
+
+async function salvarPrazo() {
+  const processo = document.getElementById('f-processo').value.trim();
+  const area     = document.getElementById('f-area').value;
+  const tipo     = document.getElementById('f-tipo').value;
+  const venc     = document.getElementById('f-vencimento').value;
+  const resp     = document.getElementById('f-responsavel').value;
+  const obs      = document.getElementById('f-obs').value;
+
+  if (!processo || !venc) {
+    alert('Preencha o número do processo e a data de vencimento.');
+    return;
+  }
+
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const vencDate = new Date(venc + 'T00:00:00');
+  const diasRestantes = Math.round((vencDate - hoje) / 86400000);
+
+  try {
+    const { error } = await db.from('prazos_judiciais').insert({
+      numero_processo: processo,
+      area,
+      tipo_prazo:      tipo,
+      data_publicacao: new Date().toISOString().slice(0,10),
+      data_vencimento: venc,
+      dias_restantes:  diasRestantes,
+      status:          diasRestantes < 0 ? 'vencido' : 'pendente',
+      responsavel:     resp,
+      origem:          'manual',
+      observacoes:     obs,
+    });
+
+    if (error) throw error;
+
+    fecharModal();
+    await carregarDados();
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DETALHE (ao clicar na linha)
+// ══════════════════════════════════════════════════════════════
+function abrirDetalhe(id) {
+  const p = todosPrazos.find(x => x.id === id);
+  if (!p) return;
+  // Por ora, exibe alert simples. Futuramente: modal de edição/atribuição.
+  const venc = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
+  alert(`Processo: ${p.numero_processo}\nÁrea: ${p.area}\nTipo: ${p.tipo_prazo}\nVencimento: ${venc}\nResponsável: ${p.responsavel || 'Não atribuído'}\nOrigem: ${p.origem}`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INICIALIZAR
+// ══════════════════════════════════════════════════════════════
+carregarDados();
+
+// Atualizar a cada 5 minutos automaticamente
+setInterval(carregarDados, 5 * 60 * 1000);
+</script>
+</body>
+</html>

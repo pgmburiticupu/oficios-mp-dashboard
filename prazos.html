@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Distribuidor de Prazos — PGM Buriticupu</title>
 
-<!-- Supabase JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -327,14 +324,39 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// CONFIGURAÇÃO SUPABASE
-// Substitua com as suas credenciais do projeto Supabase
+// CONFIGURAÇÃO SUPABASE — REST API direto
 // ══════════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://khhjpxiyzbyrctaxdhm.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_06TF_4sAy4Y15TWVF939BA_kMNhkbxq';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoaGVqcHhpeXpieXJjdGF4ZGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODczMjQsImV4cCI6MjEwMTI2MzMyNH0.rPKfe5-atm9oBNbg7IO4YeQRyXacwTpi418TTo-H944';
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function querySupabase(tabela, filtros = '') {
+  const url = `${SUPABASE_URL}/rest/v1/${tabela}?${filtros}`;
+  const resp = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function insertSupabase(tabela, dados) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${tabela}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(dados)
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
 
 // ── Estado da aplicação
 let todosPrazos = [];
@@ -369,20 +391,16 @@ const CORES_RESP = {
 // ══════════════════════════════════════════════════════════════
 async function carregarDados() {
   try {
-    const { data, error } = await db
-      .from('prazos_judiciais')
-      .select('*')
-      .neq('status', 'concluido')
-      .order('data_vencimento', { ascending: true });
-
-    if (error) throw error;
-
+    const data = await querySupabase(
+      'prazos_judiciais',
+      'select=*&status=neq.concluido&order=data_vencimento.asc'
+    );
     todosPrazos = data || [];
     atualizarInterface();
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
     document.getElementById('tabela-corpo').innerHTML =
-      `<tr><td colspan="7" class="empty-state" style="color:var(--red)">Erro ao conectar ao Supabase. Verifique as credenciais.</td></tr>`;
+      `<tr><td colspan="7" class="empty-state" style="color:var(--red)">Erro: ${err.message}</td></tr>`;
   }
 }
 
@@ -599,7 +617,7 @@ async function salvarPrazo() {
   const diasRestantes = Math.round((vencDate - hoje) / 86400000);
 
   try {
-    const { error } = await db.from('prazos_judiciais').insert({
+    const error = await insertSupabase('prazos_judiciais', {
       numero_processo: processo,
       area,
       tipo_prazo:      tipo,
@@ -611,8 +629,6 @@ async function salvarPrazo() {
       origem:          'manual',
       observacoes:     obs,
     });
-
-    if (error) throw error;
 
     fecharModal();
     await carregarDados();

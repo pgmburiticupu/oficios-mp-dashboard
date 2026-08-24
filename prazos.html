@@ -791,78 +791,123 @@ async function processarPDF(input) {
 
   document.getElementById('upload-log').innerHTML = '';
   document.getElementById('upload-log').style.display = 'block';
-  log_upload('📄 Lendo PDF: ' + file.name);
-  setProgress(10);
+  log_upload('📄 Lendo PDF: ' + file.name + ' (' + (file.size/1024/1024).toFixed(1) + ' MB)');
+  setProgress(5);
 
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  log_upload('📋 Total de páginas: ' + pdf.numPages);
-  setProgress(20);
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    setProgress(10);
 
-  let textoCompleto = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
-    if (i % 10 === 0) setProgress(20 + Math.round((i / pdf.numPages) * 40));
-  }
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    log_upload('📋 Total de páginas: ' + pdf.numPages);
 
-  log_upload('🔍 Buscando processos da PGM Buriticupu...');
-  setProgress(65);
+    let textoCompleto = '';
+    const inicio = Date.now();
 
-  // Dividir em blocos por número de processo
-  const blocos = textoCompleto.split(/(?=\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/);
-  const padrao = new RegExp(TERMOS_PGM.join('|'), 'i');
-  const hoje = new Date().toISOString().slice(0,10);
-  const encontrados = [];
-  const vistos = new Set();
+    for (let i = 1; i <= pdf.numPages; i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
+        page.cleanup();
+      } catch (pageErr) {
+        log_upload('  ⚠️ Erro na página ' + i + ' (pulando)', 'var(--yellow)');
+      }
 
-  for (const bloco of blocos) {
-    if (!padrao.test(bloco)) continue;
-    const numero = extrairNumero(bloco);
-    if (!numero || vistos.has(numero)) continue;
-    vistos.add(numero);
-
-    const tipo = detectarTipo(bloco);
-    const area = detectarArea(bloco);
-    const venc = calcularVencimento(new Date(hoje), tipo);
-    const dias = Math.round((new Date(venc) - new Date()) / 86400000);
-
-    encontrados.push({
-      numero_processo: numero, area, tipo_prazo: tipo,
-      data_publicacao: hoje, data_vencimento: venc,
-      dias_restantes: dias, status: dias < 0 ? 'vencido' : 'pendente',
-      responsavel: null, origem: 'DJMA',
-      texto_intimacao: bloco.slice(0, 500),
-    });
-    log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | vence ' + venc, 'var(--green)');
-  }
-
-  setProgress(80);
-
-  if (encontrados.length === 0) {
-    log_upload('⚠️ Nenhum processo da PGM Buriticupu encontrado neste PDF.', 'var(--yellow)');
-    setProgress(100);
-    return;
-  }
-
-  log_upload('💾 Salvando ' + encontrados.length + ' processo(s) no banco de dados...');
-
-  let salvos = 0;
-  for (const p of encontrados) {
-    try {
-      await insertSupabase('prazos_judiciais', p);
-      salvos++;
-    } catch(e) {
-      log_upload('  ⚠️ ' + p.numero_processo + ': ' + e.message, 'var(--yellow)');
+      // Atualizar progresso e liberar a UI a cada 5 páginas
+      if (i % 5 === 0 || i === pdf.numPages) {
+        setProgress(10 + Math.round((i / pdf.numPages) * 50));
+        log_upload('  📖 Página ' + i + ' de ' + pdf.numPages + '...');
+        await new Promise(r => setTimeout(r, 0)); // libera a UI
+      }
     }
+
+    const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
+    log_upload('✅ Leitura concluída em ' + segundos + 's (' + textoCompleto.length + ' caracteres)');
+
+    if (textoCompleto.trim().length < 100) {
+      log_upload('❌ O PDF parece ser digitalizado (imagem) — sem texto extraível. Seria necessário OCR.', 'var(--red)');
+      setProgress(100);
+      input.value = '';
+      return;
+    }
+
+    log_upload('🔍 Buscando processos da PGM Buriticupu...');
+    setProgress(65);
+    await new Promise(r => setTimeout(r, 0));
+
+    // Dividir em blocos por número de processo
+    const blocos = textoCompleto.split(/(?=\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/);
+    log_upload('  Blocos identificados: ' + blocos.length);
+
+    const padrao = new RegExp(TERMOS_PGM.join('|'), 'i');
+    const hoje = new Date().toISOString().slice(0,10);
+    const encontrados = [];
+    const vistos = new Set();
+
+    for (let idx = 0; idx < blocos.length; idx++) {
+      const bloco = blocos[idx];
+      if (!padrao.test(bloco)) continue;
+      const numero = extrairNumero(bloco);
+      if (!numero || vistos.has(numero)) continue;
+      vistos.add(numero);
+
+      const tipo = detectarTipo(bloco);
+      const area = detectarArea(bloco);
+      const venc = calcularVencimento(new Date(hoje + 'T12:00:00'), tipo);
+      const dias = Math.round((new Date(venc) - new Date()) / 86400000);
+
+      encontrados.push({
+        numero_processo: numero, area, tipo_prazo: tipo,
+        data_publicacao: hoje, data_vencimento: venc,
+        dias_restantes: dias, status: dias < 0 ? 'vencido' : 'pendente',
+        responsavel: null, origem: 'DJMA',
+        texto_intimacao: bloco.slice(0, 500),
+      });
+      log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | vence ' + venc, 'var(--green)');
+
+      if (idx % 100 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+
+    setProgress(80);
+
+    if (encontrados.length === 0) {
+      log_upload('⚠️ Nenhum processo com "Buriticupu" encontrado neste PDF.', 'var(--yellow)');
+      setProgress(100);
+      input.value = '';
+      return;
+    }
+
+    log_upload('💾 Salvando ' + encontrados.length + ' processo(s)...');
+
+    let salvos = 0, duplicados = 0;
+    for (const p of encontrados) {
+      try {
+        // Verificar se já existe
+        const existe = await querySupabase('prazos_judiciais',
+          'select=id&numero_processo=eq.' + encodeURIComponent(p.numero_processo) +
+          '&data_publicacao=eq.' + p.data_publicacao);
+        if (existe.length > 0) { duplicados++; continue; }
+
+        await insertSupabase('prazos_judiciais', p);
+        salvos++;
+      } catch(e) {
+        log_upload('  ⚠️ ' + p.numero_processo + ': ' + e.message, 'var(--yellow)');
+      }
+    }
+
+    setProgress(100);
+    log_upload('🎉 ' + salvos + ' novo(s) importado(s)' +
+      (duplicados ? ' · ' + duplicados + ' já existiam' : ''), 'var(--green)');
+
+    setTimeout(() => carregarDados(), 800);
+
+  } catch (err) {
+    log_upload('❌ Erro: ' + err.message, 'var(--red)');
+    console.error(err);
+    setProgress(100);
   }
 
-  setProgress(100);
-  log_upload('🎉 ' + salvos + ' prazo(s) importado(s) com sucesso!', 'var(--green)');
-
-  // Recarregar dados
-  setTimeout(() => carregarDados(), 1000);
   input.value = '';
 }
 

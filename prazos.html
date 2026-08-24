@@ -201,7 +201,11 @@
 
     <div class="divider"></div>
     <div class="sgroup">Responsáveis</div>
-    <div id="sidebar-responsaveis"></div>
+    <div class="sitem" onclick="filtrarResp('Benedito')">👤 Benedito <span style="font-size:9px;color:var(--muted)">Saúde</span></div>
+    <div class="sitem" onclick="filtrarResp('Jucelino')">👤 Jucelino <span style="font-size:9px;color:var(--muted)">Trabalho</span></div>
+    <div class="sitem" onclick="filtrarResp('Ruã Pablo')">👤 Ruã Pablo <span style="font-size:9px;color:var(--muted)">Judicial</span></div>
+    <div class="sitem" onclick="filtrarResp('Gustavo')">👤 Gustavo <span style="font-size:9px;color:var(--muted)">Tributário</span></div>
+    <div class="sitem" onclick="filtrarResp('Eduardo')">👤 Eduardo <span style="font-size:9px;color:var(--muted)">Administrativo</span></div>
 
     <div class="divider"></div>
     <div class="sgroup">Filtros rápidos</div>
@@ -353,13 +357,11 @@
       <div class="form-field">
         <label class="form-label">Responsável</label>
         <select class="form-input" id="f-responsavel">
-          <option value="Ricardo">Ricardo</option>
-          <option value="Gianice">Gianice</option>
-          <option value="Gabi">Gabi</option>
-          <option value="Benedito">Benedito</option>
-          <option value="Alexandre">Alexandre</option>
-          <option value="Whesley">Whesley</option>
-          <option value="Eduardo">Eduardo</option>
+          <option value="Benedito">Benedito — Saúde</option>
+          <option value="Jucelino">Jucelino — Trabalho</option>
+          <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
+          <option value="Gustavo">Gustavo — Tributário</option>
+          <option value="Eduardo">Eduardo — Administrativo</option>
         </select>
       </div>
     </div>
@@ -436,9 +438,11 @@ const BADGE_STYLES = {
 };
 
 const CORES_RESP = {
-  'Ricardo': '#2a4499', 'Gianice': '#065f46', 'Gabi': '#7c2d12',
-  'Benedito': '#5b21b6', 'Alexandre': '#1e3a5f', 'Whesley': '#7f1d1d',
-  'Eduardo': '#1a3a2a',
+  'Benedito':  '#22577a',  // Saúde
+  'Jucelino':  '#1e3a5f',  // Trabalho
+  'Ruã Pablo': '#5b21b6',  // Judicial
+  'Gustavo':   '#7c2d12',  // Tributário
+  'Eduardo':   '#065f46',  // Administrativo
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -499,14 +503,7 @@ function atualizarInterface() {
   document.getElementById('cnt-criticos').textContent = criticos;
   document.getElementById('cnt-djma').textContent = todosPrazos.filter(p => p.origem === 'DJMA').length;
 
-  // Sidebar responsáveis
-  const respCnts = {};
-  todosPrazos.forEach(p => { if (p.responsavel) respCnts[p.responsavel] = (respCnts[p.responsavel]||0)+1; });
-  const respHtml = Object.entries(respCnts)
-    .sort((a,b) => b[1]-a[1])
-    .map(([nome,cnt]) => `<div class="sitem" onclick="filtrarResp('${nome}')">👤 ${nome}<span class="cnt">${cnt}</span></div>`)
-    .join('');
-  document.getElementById('sidebar-responsaveis').innerHTML = respHtml;
+  // Sidebar responsáveis: fixos por área
 
   // Banner DJMA
   const agora = new Date().toLocaleString('pt-BR');
@@ -635,23 +632,16 @@ function fecharModal(event) {
 
 function sugerirResponsavel() {
   const area = document.getElementById('f-area').value;
-  const cargaPorArea = {};
-  todosPrazos
-    .filter(p => p.area === area && p.responsavel)
-    .forEach(p => { cargaPorArea[p.responsavel] = (cargaPorArea[p.responsavel]||0)+1; });
-
-  if (!Object.keys(cargaPorArea).length) {
+  const titular = RESP_POR_AREA[area];
+  if (titular) {
+    document.getElementById('f-responsavel').value = titular;
+    const total = todosPrazos.filter(p => p.responsavel === titular).length;
+    document.getElementById('sugestao-texto').textContent =
+      `Responsável titular de ${area}: ${titular} (${total} prazo(s) aberto(s))`;
+    document.getElementById('sugestao-box').style.display = 'flex';
+  } else {
     document.getElementById('sugestao-box').style.display = 'none';
-    return;
   }
-
-  const [melhor, carga] = Object.entries(cargaPorArea).sort((a,b) => a[1]-b[1])[0];
-  const media = (Object.values(cargaPorArea).reduce((s,v)=>s+v,0) / Object.values(cargaPorArea).length).toFixed(1);
-
-  document.getElementById('f-responsavel').value = melhor;
-  document.getElementById('sugestao-texto').textContent =
-    `Sugestão: ${melhor} tem menos prazos em ${area} (${carga} vs. média ${media})`;
-  document.getElementById('sugestao-box').style.display = 'flex';
 }
 
 async function salvarPrazo() {
@@ -861,7 +851,7 @@ async function processarPDF(input) {
         numero_processo: numero, area, tipo_prazo: tipo,
         data_publicacao: hoje, data_vencimento: venc,
         dias_restantes: dias, status: dias < 0 ? 'vencido' : 'pendente',
-        responsavel: null, origem: 'DJMA',
+        responsavel: RESP_POR_AREA[area] || null, origem: 'DJMA',
         texto_intimacao: bloco.slice(0, 500),
       });
       log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | vence ' + venc, 'var(--green)');

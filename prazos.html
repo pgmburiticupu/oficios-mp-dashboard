@@ -1158,17 +1158,31 @@ async function processarPJeImagem(input) {
   setPjeProgress(40);
 
   try {
+    // Timeout de 60 segundos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     const resp = await fetch(PJE_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imagem: base64, tipo: file.type || 'image/png' })
+      body: JSON.stringify({ imagem: base64, tipo: file.type || 'image/png' }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
-    if (!resp.ok) throw new Error('Worker retornou HTTP ' + resp.status);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error('Worker HTTP ' + resp.status + ': ' + txt.slice(0, 200));
+    }
     const dados = await resp.json();
     setPjeProgress(70);
 
-    if (dados.error) throw new Error(dados.error);
+    if (dados.error) {
+      if (dados.error.includes('credit') || dados.error.includes('balance')) {
+        throw new Error('A conta da API Anthropic está sem créditos. Adicione em console.anthropic.com → Billing.');
+      }
+      throw new Error(dados.error);
+    }
 
     const processos = dados.processos || [];
     log_pje('✓ ' + processos.length + ' processo(s) identificado(s) pela IA');
@@ -1216,7 +1230,11 @@ async function processarPJeImagem(input) {
     if (salvos > 0) setTimeout(() => carregarDados(), 800);
 
   } catch(err) {
-    log_pje('❌ Erro: ' + err.message, 'var(--red)');
+    if (err.name === 'AbortError') {
+      log_pje('❌ Tempo esgotado (60s). O Worker não respondeu — verifique os créditos da API.', 'var(--red)');
+    } else {
+      log_pje('❌ Erro: ' + err.message, 'var(--red)');
+    }
     setPjeProgress(100);
   }
   input.value = '';

@@ -1494,7 +1494,10 @@ async function processarPJeImagem(input) {
     for (const p of processos) {
       if (!p.numero_processo) { erros++; continue; }
 
-      const area = detectarArea((p.assunto || '') + ' ' + (p.tipo_prazo || ''));
+      // Usar área classificada pela IA; fallback para detectarArea se não vier
+      const area = (p.area && ['TRABALHO','SAÚDE','TRIBUTÁRIO','JUDICIAL','ADMINISTRATIVO'].includes(p.area))
+        ? p.area
+        : detectarArea((p.assunto || '') + ' ' + (p.tipo_prazo || ''));
       const temVenc = p.tem_prazo && p.data_vencimento;
       const dias = temVenc
         ? Math.round((new Date(p.data_vencimento + 'T12:00:00') - new Date()) / 86400000)

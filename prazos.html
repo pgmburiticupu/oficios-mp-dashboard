@@ -950,32 +950,12 @@ function renderizarTabela() {
         ? `<span class="dias-chip dias-yellow">⚠ ${dias} dias</span>`
         : `<span class="dias-chip dias-green">✓ ${dias} dias</span>`;
 
-    // Mapa de duplas procurador+analista
-  const DUPLAS_RESP = {
-    'Benedito':  ['Benedito', 'Rômulo'],
-    'Jucelino':  ['Jucelino', 'Eduarda'],
-    'Ruã Pablo': ['Ruã Pablo', 'Nádia'],
-    'Gustavo':   ['Gustavo', 'Erika'],
-    'Eduarda':   ['Jucelino', 'Eduarda'],
-    'Nádia':     ['Ruã Pablo', 'Nádia'],
-    'Rômulo':    ['Benedito', 'Rômulo'],
-    'Erika':     ['Gustavo', 'Erika'],
-  };
-  const dupla = p.responsavel ? DUPLAS_RESP[p.responsavel] : null;
-  const respHtml = dupla
-    ? `<div style="display:flex;flex-direction:column;gap:3px">
-        <div class="resp-chip" style="font-size:11px">
-          <div class="resp-avatar" style="background:${CORES_RESP[dupla[0]]||'#334155'}">${dupla[0].slice(0,2).toUpperCase()}</div>
-          ${dupla[0]}
-        </div>
-        <div class="resp-chip" style="font-size:11px">
-          <div class="resp-avatar" style="background:${CORES_RESP[dupla[1]]||'#334155'}">${dupla[1].slice(0,2).toUpperCase()}</div>
-          ${dupla[1]}
-        </div>
+    const respHtml = p.responsavel
+    ? `<div class="resp-chip">
+        <div class="resp-avatar" style="background:${CORES_RESP[p.responsavel]||'#334155'}">${p.responsavel.slice(0,2).toUpperCase()}</div>
+        ${p.responsavel}
       </div>`
-    : p.responsavel
-      ? `<div class="resp-chip"><div class="resp-avatar" style="background:#334155">${p.responsavel.slice(0,2).toUpperCase()}</div>${p.responsavel}</div>`
-      : `<span style="color:var(--muted);font-style:italic;font-size:11px">Não atribuído</span>`;
+    : `<span style="color:var(--muted);font-style:italic;font-size:11px">Não atribuído</span>`;
 
     const origemHtml = p.origem === 'DJMA'
       ? `<div class="source-djma"><div class="source-dot"></div> DJMA auto</div>`

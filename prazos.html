@@ -305,6 +305,24 @@
     .btn-primary { padding: 8px 12px; font-size: 11px; }
   }
 
+
+  /* ABAS DE GRAU */
+  .grau-tabs { display: flex; gap: 4px; }
+  .grau-tab {
+    padding: 7px 20px; border-radius: 7px 7px 0 0;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); border-bottom: none;
+    background: var(--surface); color: var(--muted);
+    transition: all .15s; position: relative; bottom: -1px;
+  }
+  .grau-tab:hover { color: var(--sub); }
+  .grau-tab.active { background: var(--card); color: var(--text); border-color: var(--border-hi); }
+  .grau-tab.active.primeiro { color: #60a5fa; border-top: 2px solid #3b82f6; }
+  .grau-tab.active.segundo  { color: #a78bfa; border-top: 2px solid #8b5cf6; }
+  .grau-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 18px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-left: 7px; padding: 0 5px; }
+  .grau-badge.b1 { background: rgba(59,130,246,.2); color: #60a5fa; }
+  .grau-badge.b2 { background: rgba(139,92,246,.2); color: #a78bfa; }
+  .grau-tab-wrapper { border-bottom: 1px solid var(--border-hi); margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -480,13 +498,25 @@
 
     <!-- TABELA -->
     <div>
-      <div class="section-header">
-        <div class="section-title">Prazos ativos</div>
-        <div class="filters">
-          <button class="filter-btn active" onclick="filtrarStatus('',this)">Todos</button>
-          <button class="filter-btn" onclick="filtrarStatus('vencido',this)">Vencidos</button>
-          <button class="filter-btn" onclick="filtrarStatus('critico',this)">Críticos</button>
-          <button class="filter-btn" onclick="filtrarStatus('pendente',this)">Pendentes</button>
+      <!-- ABAS GRAU -->
+      <div class="grau-tab-wrapper">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div class="grau-tabs">
+            <div class="grau-tab primeiro active" id="tab-1grau" onclick="mudarGrauAba(1)">
+              ⚖️ 1º Grau
+              <span class="grau-badge b1" id="badge-1grau">—</span>
+            </div>
+            <div class="grau-tab segundo" id="tab-2grau" onclick="mudarGrauAba(2)">
+              🏛️ 2º Grau
+              <span class="grau-badge b2" id="badge-2grau">—</span>
+            </div>
+          </div>
+          <div class="filters" style="margin-bottom:1px">
+            <button class="filter-btn active" onclick="filtrarStatus('',this)">Todos</button>
+            <button class="filter-btn" onclick="filtrarStatus('vencido',this)">Vencidos</button>
+            <button class="filter-btn" onclick="filtrarStatus('critico',this)">Críticos</button>
+            <button class="filter-btn" onclick="filtrarStatus('pendente',this)">Pendentes</button>
+          </div>
         </div>
       </div>
       <div class="table-wrap">
@@ -750,6 +780,7 @@ async function insertSupabase(tabela, dados) {
 // ── Estado da aplicação
 let todosPrazos = [];
 let filtroAtual = { area: '', status: '', origem: '' };
+let grauAtivo = 1;
 
 // ── Cores por área
 const CORES_AREA = {
@@ -809,11 +840,12 @@ function atualizarInterface() {
   });
 
   // KPIs
-  const total    = todosPrazos.length;
-  const vencidos = todosPrazos.filter(p => p._dias < 0).length;
-  const criticos = todosPrazos.filter(p => p._dias >= 0 && p._dias <= 5).length;
+  const prazosGrau = todosPrazos.filter(p => (p.grau || 1) === grauAtivo);
+  const total    = prazosGrau.length;
+  const vencidos = prazosGrau.filter(p => p._dias < 0).length;
+  const criticos = prazosGrau.filter(p => p._dias >= 0 && p._dias <= 5).length;
   const noPrazo  = total - vencidos - criticos;
-  const djmaHoje = todosPrazos.filter(p => p.data_publicacao === new Date().toISOString().slice(0,10) && p.origem === 'DJMA').length;
+  const djmaHoje = prazosGrau.filter(p => p.data_publicacao === new Date().toISOString().slice(0,10) && p.origem === 'DJMA').length;
 
   document.getElementById('kpi-total').textContent    = total;
   document.getElementById('kpi-vencidos').textContent  = vencidos;
@@ -836,8 +868,14 @@ function atualizarInterface() {
   document.getElementById('cnt-djma').textContent = todosPrazos.filter(p => p.origem === 'DJMA').length;
   const c1 = document.getElementById('cnt-1grau');
   const c2 = document.getElementById('cnt-2grau');
-  if (c1) c1.textContent = todosPrazos.filter(p => !p.grau || p.grau === 1).length;
-  if (c2) c2.textContent = todosPrazos.filter(p => p.grau === 2).length;
+  const n1 = todosPrazos.filter(p => !p.grau || p.grau === 1).length;
+  const n2 = todosPrazos.filter(p => p.grau === 2).length;
+  if (c1) c1.textContent = n1;
+  if (c2) c2.textContent = n2;
+  const b1 = document.getElementById('badge-1grau');
+  const b2 = document.getElementById('badge-2grau');
+  if (b1) b1.textContent = n1;
+  if (b2) b2.textContent = n2;
 
   // Sidebar responsáveis: fixos por área
 
@@ -865,7 +903,8 @@ function renderizarTabela() {
   // Aplicar filtros
   if (filtroAtual.area)    prazos = prazos.filter(p => p.area === filtroAtual.area);
   if (filtroAtual.origem)  prazos = prazos.filter(p => p.origem === filtroAtual.origem);
-  if (filtroAtual.grau)    prazos = prazos.filter(p => p.grau === filtroAtual.grau);
+  // Filtrar pelo grau da aba ativa
+  prazos = prazos.filter(p => (p.grau || 1) === grauAtivo);
   if (filtroAtual.resp)    prazos = prazos.filter(p => p.responsavel === filtroAtual.resp);
   if (filtroAtual.status === 'vencido')   prazos = prazos.filter(p => p._dias < 0);
   if (filtroAtual.status === 'critico')   prazos = prazos.filter(p => p._dias >= 0 && p._dias <= 5);
@@ -954,8 +993,16 @@ function filtrarStatus(status, btn) {
   renderizarTabela();
 }
 
-function filtrarGrau(grau) {
-  filtroAtual = { ...filtroAtual, grau };
+
+function mudarGrauAba(grau) {
+  grauAtivo = grau;
+  // Atualizar visual das abas
+  document.getElementById('tab-1grau').classList.toggle('active', grau === 1);
+  document.getElementById('tab-2grau').classList.toggle('active', grau === 2);
+  // Resetar filtros de status ao trocar de grau
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn')[0]?.classList.add('active');
+  filtroAtual.status = '';
   renderizarTabela();
 }
 

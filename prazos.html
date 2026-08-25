@@ -117,6 +117,52 @@
   .sugestao { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.15); border-radius: 7px; padding: 10px 12px; font-size: 11px; color: var(--green); margin-bottom: 14px; }
   .loading { opacity: .5; pointer-events: none; }
 
+  /* PAINEL LATERAL */
+  .painel-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 300;
+  }
+  .painel-overlay.open { display: block; }
+  .painel {
+    position: fixed; top: 0; right: -480px; width: 460px;
+    height: 100vh; background: var(--card);
+    border-left: 1px solid var(--border);
+    z-index: 301; display: flex; flex-direction: column;
+    transition: right .25s ease; overflow: hidden;
+  }
+  .painel.open { right: 0; }
+  .painel-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .painel-numero { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--sub); margin-bottom: 4px; }
+  .painel-titulo { font-size: 15px; font-weight: 700; }
+  .painel-fechar {
+    background: none; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;
+  }
+  .painel-fechar:hover { color: var(--text); }
+  .painel-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .painel-section { display: flex; flex-direction: column; gap: 8px; }
+  .painel-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .painel-valor { font-size: 13px; color: var(--text); }
+  .painel-obs { font-size: 11px; color: var(--sub); background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; line-height: 1.6; }
+  .painel-select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: var(--surface); color: var(--text); }
+  .painel-textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: var(--surface); color: var(--text); resize: vertical; min-height: 70px; font-family: inherit; }
+  .painel-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .status-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-status {
+    padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid; text-align: center; transition: opacity .15s;
+  }
+  .btn-status:hover { opacity: .8; }
+  .btn-andamento { background: rgba(245,158,11,.12); color: var(--yellow); border-color: rgba(245,158,11,.25); }
+  .btn-cumprido  { background: rgba(34,197,94,.12);  color: var(--green);  border-color: rgba(34,197,94,.25); }
+  .btn-salvar    { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-salvar:hover { opacity: .9; }
+  .historico-item { font-size: 11px; color: var(--sub); padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04); line-height: 1.5; }
+  .historico-item:last-child { border-bottom: none; }
+
   /* UPLOAD PDF */
   .upload-banner {
     background: linear-gradient(135deg, rgba(168,85,247,.08), rgba(79,127,255,.06));
@@ -319,6 +365,7 @@
               <th>Vencimento</th>
               <th>Dias restantes</th>
               <th>Responsável</th>
+              <th>Status</th>
               <th>Origem</th>
             </tr>
           </thead>
@@ -329,6 +376,81 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- PAINEL LATERAL -->
+<div class="painel-overlay" id="painel-overlay" onclick="fecharPainel(event)"></div>
+<div class="painel" id="painel-lateral">
+  <div class="painel-header">
+    <div>
+      <div class="painel-numero" id="p-numero">—</div>
+      <div class="painel-titulo" id="p-titulo">Detalhes do prazo</div>
+    </div>
+    <button class="painel-fechar" onclick="fecharPainel()">✕</button>
+  </div>
+  <div class="painel-body">
+
+    <div class="painel-section">
+      <div class="painel-label">Área</div>
+      <div id="p-area-badge"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="painel-section">
+        <div class="painel-label">Publicação</div>
+        <div class="painel-valor" id="p-publicacao">—</div>
+      </div>
+      <div class="painel-section">
+        <div class="painel-label">Vencimento</div>
+        <div class="painel-valor" id="p-vencimento">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="painel-section">
+        <div class="painel-label">Dias restantes</div>
+        <div id="p-dias">—</div>
+      </div>
+      <div class="painel-section">
+        <div class="painel-label">Origem</div>
+        <div class="painel-valor" id="p-origem">—</div>
+      </div>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Observações do sistema</div>
+      <div class="painel-obs" id="p-obs">—</div>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Responsável</div>
+      <select class="painel-select" id="p-responsavel">
+        <option value="Benedito">Benedito — Saúde</option>
+        <option value="Jucelino">Jucelino — Trabalho</option>
+        <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
+        <option value="Gustavo">Gustavo — Tributário</option>
+        <option value="Eduardo">Eduardo — Administrativo</option>
+      </select>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Anotação do procurador</div>
+      <textarea class="painel-textarea" id="p-anotacao" placeholder="Descreva o que foi feito, pendências, estratégia..."></textarea>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Histórico</div>
+      <div id="p-historico"><div style="font-size:11px;color:var(--muted)">Sem registros ainda.</div></div>
+    </div>
+
+  </div>
+  <div class="painel-footer">
+    <div class="status-btns">
+      <button class="btn-status btn-andamento" onclick="mudarStatus('em_andamento')">⏳ Em andamento</button>
+      <button class="btn-status btn-cumprido"  onclick="mudarStatus('concluido')">✅ Cumprido</button>
+    </div>
+    <button class="btn-salvar" onclick="salvarPainel()">💾 Salvar alterações</button>
   </div>
 </div>
 
@@ -586,7 +708,7 @@ function renderizarTabela() {
 
     const vencStr = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
 
-    return `<tr onclick="abrirDetalhe('${p.id}')">
+    return `<tr onclick="abrirPainel('${p.id}')">
       <td>
         <div class="proc-num">${p.numero_processo}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">
@@ -598,6 +720,15 @@ function renderizarTabela() {
       <td>${vencStr}</td>
       <td>${diasChip}</td>
       <td>${respHtml}</td>
+      <td>
+        ${p.status === 'concluido'
+          ? '<span style="font-size:11px;color:var(--green);font-weight:600">✅ Cumprido</span>'
+          : p.status === 'em_andamento'
+            ? '<span style="font-size:11px;color:var(--yellow);font-weight:600">⏳ Em andamento</span>'
+            : p.status === 'vencido'
+              ? '<span style="font-size:11px;color:var(--red);font-weight:600">🔴 Vencido</span>'
+              : '<span style="font-size:11px;color:var(--muted)">Pendente</span>'}
+      </td>
       <td>${origemHtml}</td>
     </tr>`;
   }).join('');
@@ -711,6 +842,133 @@ function abrirDetalhe(id) {
   const venc = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
   alert(`Processo: ${p.numero_processo}\nÁrea: ${p.area}\nTipo: ${p.tipo_prazo}\nVencimento: ${venc}\nResponsável: ${p.responsavel || 'Não atribuído'}\nOrigem: ${p.origem}`);
 }
+
+
+// ══════════════════════════════════════════════════════════════
+// PAINEL LATERAL — Detalhes, edição e histórico
+// ══════════════════════════════════════════════════════════════
+let painelPrazoId = null;
+let painelStatus  = null;
+
+function abrirPainel(id) {
+  const p = todosPrazos.find(x => x.id === id);
+  if (!p) return;
+  painelPrazoId = id;
+  painelStatus  = p.status;
+
+  // Preencher campos
+  document.getElementById('p-numero').textContent  = p.numero_processo;
+  document.getElementById('p-titulo').textContent  = p.tipo_prazo;
+  document.getElementById('p-publicacao').textContent = p.data_publicacao
+    ? new Date(p.data_publicacao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  document.getElementById('p-vencimento').textContent = p.data_vencimento
+    ? new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  document.getElementById('p-obs').textContent     = p.observacoes || 'Sem observações do sistema.';
+  document.getElementById('p-origem').textContent  = p.origem || '—';
+  document.getElementById('p-anotacao').value      = '';
+
+  // Badge área
+  const cores = CORES_AREA[p.area] || { badge: 'badge-green' };
+  const style = BADGE_STYLES[cores.badge] || '';
+  document.getElementById('p-area-badge').innerHTML =
+    `<span class="area-badge" style="${style}">${p.area}</span>
+     <span style="font-size:11px;color:var(--sub);margin-left:8px">${p.tipo_prazo}</span>`;
+
+  // Chip dias
+  const dias = p._dias || 0;
+  const chipCls = dias < 0 ? 'dias-red' : dias <= 5 ? 'dias-yellow' : 'dias-green';
+  const chipTxt = dias < 0 ? `● ${dias} dias` : dias <= 5 ? `⚠ ${dias} dias` : `✓ ${dias} dias`;
+  document.getElementById('p-dias').innerHTML = `<span class="dias-chip ${chipCls}">${chipTxt}</span>`;
+
+  // Responsável
+  document.getElementById('p-responsavel').value = p.responsavel || 'Ruã Pablo';
+
+  // Histórico
+  const hist = p.historico ? JSON.parse(p.historico) : [];
+  document.getElementById('p-historico').innerHTML = hist.length
+    ? hist.map(h => `<div class="historico-item">
+        <strong style="color:var(--text)">${h.data}</strong> · <span style="color:var(--accent)">${h.status || 'atualizado'}</span>
+        ${h.anotacao ? '<br>' + h.anotacao : ''}
+      </div>`).join('')
+    : '<div style="font-size:11px;color:var(--muted)">Sem registros ainda.</div>';
+
+  document.getElementById('painel-overlay').classList.add('open');
+  document.getElementById('painel-lateral').classList.add('open');
+}
+
+function fecharPainel(event) {
+  if (event && event.target !== document.getElementById('painel-overlay')) return;
+  document.getElementById('painel-overlay').classList.remove('open');
+  document.getElementById('painel-lateral').classList.remove('open');
+  painelPrazoId = null;
+}
+
+function mudarStatus(novoStatus) {
+  painelStatus = novoStatus;
+  document.querySelectorAll('.btn-status').forEach(b => b.style.opacity = '.5');
+  const btn = novoStatus === 'concluido'
+    ? document.querySelector('.btn-cumprido')
+    : document.querySelector('.btn-andamento');
+  if (btn) btn.style.opacity = '1';
+}
+
+async function salvarPainel() {
+  if (!painelPrazoId) return;
+
+  const responsavel = document.getElementById('p-responsavel').value;
+  const anotacao    = document.getElementById('p-anotacao').value.trim();
+
+  // Montar histórico
+  const p = todosPrazos.find(x => x.id === painelPrazoId);
+  const hist = p?.historico ? JSON.parse(p.historico) : [];
+  if (anotacao || painelStatus !== p?.status) {
+    hist.push({
+      data:     new Date().toLocaleString('pt-BR'),
+      status:   painelStatus,
+      anotacao: anotacao || null,
+    });
+  }
+
+  const btn = document.querySelector('.btn-salvar');
+  btn.textContent = 'Salvando...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/prazos_judiciais?id=eq.${painelPrazoId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          responsavel,
+          status:    painelStatus,
+          historico: JSON.stringify(hist),
+          observacoes: anotacao
+            ? (p?.observacoes || '') + '\n[' + new Date().toLocaleString('pt-BR') + '] ' + anotacao
+            : p?.observacoes,
+        })
+      }
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    btn.textContent = '✅ Salvo!';
+    setTimeout(() => {
+      btn.textContent = '💾 Salvar alterações';
+      btn.disabled = false;
+    }, 1500);
+
+    await carregarDados();
+  } catch(e) {
+    btn.textContent = '❌ Erro: ' + e.message;
+    setTimeout(() => { btn.textContent = '💾 Salvar alterações'; btn.disabled = false; }, 2000);
+  }
+}
+
 
 // ══════════════════════════════════════════════════════════════
 // LEITURA DE PDF DO DJMA

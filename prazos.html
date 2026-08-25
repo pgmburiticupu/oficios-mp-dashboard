@@ -1282,11 +1282,69 @@ const PRAZOS_LEGAIS = {
   "recurso": 15,
 };
 
+// Mapeamento assunto → área (PGM Buriticupu)
+// Ordem importa: primeiro match vence
 const AREA_MAP = {
-  "TRABALHO":       ["trabalhista", "trt", "clt", "reclamação trabalhista"],
-  "SAÚDE":          ["saúde", "sus", "medicamento", "internação"],
-  "TRIBUTÁRIO":     ["tributário", "imposto", "iss", "iptu", "execução fiscal"],
-  "ADMINISTRATIVO": ["administrativo", "licitação", "contrato", "servidor"],
+  'TRABALHO': [
+    "trabalhista", "trt", "clt", "reclamação trabalhista", "dissídio",
+    "gratificação", "gratificacoes", "gratificações municipais", "abono",
+    "fgts", "fundo de garantia", "adicional", "hora extra",
+    "salário", "salario", "reintegração", "demissão", "rescisão",
+    "aviso prévio", "férias", "décimo terceiro", "13º",
+    "insalubridade", "periculosidade", "desvio de função",
+    "equiparação salarial", "acumulação", "cargo comissionado",
+    "estabilidade", "readmissão", "abono pecuniário", "vantagem",
+    "progressão funcional", "enquadramento", "promoção funcional",
+    "licença prêmio", "remuneração", "subsídio", "quinquênio",
+    "diária", "indenização trabalhista", "piso salarial",
+    "jornada de trabalho", "horas extras", "plantão",
+    "servidor público", "funcional", "plano de cargos"
+  ],
+  'SAÚDE': [
+    "saúde", "sus", "medicamento", "internação", "leito", "uti", "uco",
+    "hospital", "cirurgia", "tratamento médico", "enfermidade", "doença",
+    "fornecimento de medicamento", "custeio de tratamento",
+    "plano de saúde", "insumo", "odontológico", "fisioterapia",
+    "órtese", "prótese", "cadeira de rodas", "home care", "homecare",
+    "fraldas", "nutrição enteral", "dieta", "exame médico",
+    "consulta médica", "psicológico", "psiquiátrico", "autismo", "tea",
+    "deficiência", "pessoa com deficiência", "assistência farmacêutica",
+    "unidade de saúde", "ubs", "upa", "plano municipal de saúde",
+    "consulta", "procedimento médico"
+  ],
+  'TRIBUTÁRIO': [
+    "tributário", "tributo", "imposto", "iss", "iptu", "itbi",
+    "contribuição de melhoria", "execução fiscal", "certidão de dívida",
+    "cda", "dívida ativa", "parcelamento fiscal", "isenção fiscal",
+    "imunidade tributária", "taxa", "multa fiscal", "auto de infração",
+    "simples nacional", "refis", "repetição de indébito",
+    "embargos à execução fiscal", "exceção de pré-executividade"
+  ],
+  'JUDICIAL': [
+    "licitação", "contrato administrativo", "pregão", "concorrência",
+    "tomada de preço", "dispensa de licitação", "inexigibilidade",
+    "convênio", "concurso público", "processo seletivo", "edital",
+    "improbidade administrativa", "responsabilidade civil do estado",
+    "dano ao erário", "ação popular", "ação civil pública",
+    "mandado de segurança", "habeas data", "habeas corpus",
+    "desapropriação", "tombamento", "ambiental", "urbanístico",
+    "obra pública", "pavimentação", "saneamento", "alvará",
+    "licença comercial", "embargo de obra",
+    "classificação", "preterição", "ação possessória", "possessória",
+    "reintegração de posse", "manutenção de posse", "usucapião",
+    "ação de cobrança", "responsabilidade extracontratual",
+    "acidente de trânsito", "indenização por danos",
+    "dano moral", "dano material", "obrigação de fazer",
+    "obrigação de não fazer", "tutela antecipada", "liminar",
+    "cumprimento de sentença", "cumsen", "execução de sentença",
+    "precatório", "rpv", "requisição de pequeno valor",
+    "ação declaratória", "ação anulatória", "nulidade de ato",
+    "concurso", "prova subjetiva", "prova objetiva",
+    "pensão alimentícia", "alimentos", "guarda", "adoção",
+    "família", "sucessão", "inventário", "efeito suspensivo",
+    "impugnação", "embargos à execução", "exceção de pré"
+  ],
+  'ADMINISTRATIVO': []  // fallback
 };
 
 const FERIADOS = ["2026-01-01","2026-04-03","2026-04-21","2026-05-01","2026-06-04",

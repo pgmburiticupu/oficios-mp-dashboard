@@ -252,6 +252,14 @@
           <div class="upload-log" id="upload-log"></div>
         </div>
       </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-right:12px">
+        <label style="font-size:10px;color:var(--sub)">Data do diário (disponibilização)</label>
+        <input type="date" id="data-diario" class="form-input" style="width:150px;padding:6px 10px">
+        <label style="font-size:10px;color:var(--sub);display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="prazo-dobro" checked style="cursor:pointer">
+          Prazo em dobro (art. 183)
+        </label>
+      </div>
       <input type="file" id="pdf-input" accept=".pdf" onchange="processarPDF(this)">
       <button class="btn-upload" onclick="document.getElementById('pdf-input').click()">
         📤 Importar PDF
@@ -715,11 +723,23 @@ const TERMOS_PGM = [
   "BURITICUPU"
 ];
 
+// Prazos base do CPC (em dias ÚTEIS — art. 219)
+// Ordem importa: termos mais específicos primeiro
 const PRAZOS_LEGAIS = {
-  "contestação": 15, "contrarrazões": 15, "recurso ordinário": 15,
-  "apelação": 15, "agravo": 15, "embargos": 15, "impugnação": 15,
-  "memoriais": 10, "manifestação": 15, "informações": 30,
-  "resposta": 15, "defesa": 15, "recurso": 15,
+  "embargos de declaração": 5,   // art. 1.023
+  "contestação": 15,              // art. 335
+  "contrarrazões": 15,
+  "recurso ordinário": 15,
+  "apelação": 15,                 // art. 1.003 §5º
+  "agravo": 15,
+  "embargos": 15,
+  "impugnação": 15,
+  "memoriais": 15,
+  "manifestação": 15,
+  "informações": 30,
+  "resposta": 15,
+  "defesa": 15,
+  "recurso": 15,
 };
 
 const AREA_MAP = {
@@ -738,17 +758,42 @@ function diaUtil(d) {
   return dia !== 0 && dia !== 6 && !FERIADOS.includes(iso);
 }
 
-function calcularVencimento(pub, tipo) {
-  const dias = PRAZOS_LEGAIS[tipo.toLowerCase()] || 15;
-  let inicio = new Date(pub); inicio.setDate(inicio.getDate() + 1);
-  while (!diaUtil(inicio)) inicio.setDate(inicio.getDate() + 1);
-  let contados = 0, atual = new Date(inicio);
+function proximoDiaUtil(d) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + 1);
+  while (!diaUtil(r)) r.setDate(r.getDate() + 1);
+  return r;
+}
+
+// Cálculo conforme CPC:
+// art. 224 §2º: publicação = 1º dia útil após a DISPONIBILIZAÇÃO no DJe
+// art. 224 §3º: contagem inicia no 1º dia útil após a PUBLICAÇÃO
+// art. 219:    conta-se apenas dias úteis
+// art. 183:    Fazenda Pública tem prazo em DOBRO (aplicado por padrão)
+function calcularPrazoCPC(dataDisponibilizacao, tipo, aplicarDobro = true) {
+  const base = PRAZOS_LEGAIS[tipo.toLowerCase()] || 15;
+  const dias = aplicarDobro ? base * 2 : base;
+
+  const publicacao = proximoDiaUtil(dataDisponibilizacao);
+  const inicio     = proximoDiaUtil(publicacao);
+
+  let contados = 1, atual = new Date(inicio);
   while (contados < dias) {
+    atual.setDate(atual.getDate() + 1);
     if (diaUtil(atual)) contados++;
-    if (contados < dias) atual.setDate(atual.getDate() + 1);
   }
-  while (!diaUtil(atual)) atual.setDate(atual.getDate() + 1);
-  return atual.toISOString().slice(0,10);
+  return {
+    publicacao: publicacao.toISOString().slice(0,10),
+    inicio:     inicio.toISOString().slice(0,10),
+    vencimento: atual.toISOString().slice(0,10),
+    diasUteis:  dias,
+    dobro:      aplicarDobro,
+  };
+}
+
+// Compatibilidade com chamadas antigas
+function calcularVencimento(pub, tipo) {
+  return calcularPrazoCPC(pub, tipo, true).vencimento;
 }
 
 function detectarArea(texto) {
@@ -793,6 +838,25 @@ async function processarPDF(input) {
 
   document.getElementById('upload-log').innerHTML = '';
   document.getElementById('upload-log').style.display = 'block';
+
+  // Data de disponibilização: campo manual > nome do arquivo (diario_DDMMAAAA...)
+  let dataDiario = document.getElementById('data-diario').value;
+  if (!dataDiario) {
+    const m = file.name.match(/(\d{2})(\d{2})(\d{4})/);
+    if (m) {
+      dataDiario = m[3] + '-' + m[2] + '-' + m[1];
+      document.getElementById('data-diario').value = dataDiario;
+      log_upload('📅 Data detectada pelo nome do arquivo: ' + m[1] + '/' + m[2] + '/' + m[3]);
+    } else {
+      log_upload('❌ Informe a data do diário no campo ao lado antes de importar.', 'var(--red)');
+      input.value = '';
+      return;
+    }
+  }
+  const aplicarDobro = document.getElementById('prazo-dobro').checked;
+  log_upload('⚖️ Disponibilização: ' + dataDiario.split('-').reverse().join('/') +
+    (aplicarDobro ? ' · Prazo em dobro (art. 183) ATIVO' : ' · Prazo simples'));
+
   log_upload('📄 Lendo PDF: ' + file.name + ' (' + (file.size/1024/1024).toFixed(1) + ' MB)');
   setProgress(5);
 
@@ -880,19 +944,24 @@ async function processarPDF(input) {
       if (!numero || vistos.has(numero)) continue;
       vistos.add(numero);
 
-      const tipo = detectarTipo(bloco);
-      const area = detectarArea(bloco);
-      const venc = calcularVencimento(new Date(hoje + 'T12:00:00'), tipo);
-      const dias = Math.round((new Date(venc) - new Date()) / 86400000);
+      const tipo  = detectarTipo(bloco);
+      const area  = detectarArea(bloco);
+      const prazo = calcularPrazoCPC(new Date(dataDiario + 'T12:00:00'), tipo, aplicarDobro);
+      const dias  = Math.round((new Date(prazo.vencimento + 'T12:00:00') - new Date()) / 86400000);
 
       encontrados.push({
         numero_processo: numero, area, tipo_prazo: tipo,
-        data_publicacao: hoje, data_vencimento: venc,
+        data_publicacao: prazo.publicacao, data_vencimento: prazo.vencimento,
         dias_restantes: dias, status: dias < 0 ? 'vencido' : 'pendente',
         responsavel: RESP_POR_AREA[area] || null, origem: 'DJMA',
         texto_intimacao: bloco.slice(0, 500),
+        observacoes: 'CPC: disponibilizado ' + dataDiario.split('-').reverse().join('/') +
+          ' · publicado ' + prazo.publicacao.split('-').reverse().join('/') +
+          ' · ' + prazo.diasUteis + ' dias úteis' + (prazo.dobro ? ' (em dobro, art. 183)' : '') +
+          ' · CONFERIR tipo de ato e prazo',
       });
-      log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | vence ' + venc, 'var(--green)');
+      log_upload('  ✓ ' + numero + ' | ' + area + ' | ' + tipo + ' | ' + prazo.diasUteis +
+        'du → vence ' + prazo.vencimento.split('-').reverse().join('/'), 'var(--green)');
 
       if (idx % 100 === 0) await new Promise(r => setTimeout(r, 0));
     }

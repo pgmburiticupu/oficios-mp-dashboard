@@ -1494,10 +1494,42 @@ async function processarPJeImagem(input) {
     for (const p of processos) {
       if (!p.numero_processo) { erros++; continue; }
 
-      // Usar área classificada pela IA; fallback para detectarArea se não vier
-      const area = (p.area && ['TRABALHO','SAÚDE','TRIBUTÁRIO','JUDICIAL','ADMINISTRATIVO'].includes(p.area))
-        ? p.area
-        : detectarArea((p.assunto || '') + ' ' + (p.tipo_prazo || ''));
+      // Verificar área da IA e validar pelo assunto (dupla camada)
+      const assunto_lower = (p.assunto || '').toLowerCase();
+
+      // Palavras-chave por área — verificação local após a IA
+      const ehSaude = [
+        'consulta', 'medicamento', 'internação', 'leito', 'uti', 'uci',
+        'hospital', 'cirurgia', 'tratamento', 'fisioterapia', 'órtese',
+        'prótese', 'autismo', 'deficiência', 'psicológico', 'psiquiátrico',
+        'nutrição', 'diálise', 'hemodiálise', 'sus', 'ubs', 'upa',
+        'saúde', 'home care', 'fraldas', 'fornecimento de medicamento',
+        'fornecimento de remédio'
+      ].some(k => assunto_lower.includes(k));
+
+      const ehTrabalho = [
+        'gratificação', 'gratificacoes', 'gratificações', 'fgts',
+        'fundo de garantia', 'abono', 'salário', 'salario', 'hora extra',
+        'férias', 'ferias', 'décimo terceiro', 'insalubridade',
+        'periculosidade', 'progressão', 'licença prêmio', 'quinquênio',
+        'piso salarial', 'reintegração', 'demissão', 'rescisão',
+        'aviso prévio', 'cargo comissionado', 'plano de cargos',
+        'desvio de função', 'equiparação', 'fruição', 'gozo'
+      ].some(k => assunto_lower.includes(k));
+
+      const ehTributario = [
+        'execução fiscal', 'dívida ativa', 'iptu', 'iss', 'itbi',
+        'tributo', 'cda', 'parcelamento fiscal', 'isenção fiscal',
+        'repetição de indébito', 'simples nacional', 'taxa'
+      ].some(k => assunto_lower.includes(k));
+
+      // Determinar área final: local vence a IA quando identifica claramente
+      let area;
+      if (ehSaude) area = 'SAÚDE';
+      else if (ehTrabalho) area = 'TRABALHO';
+      else if (ehTributario) area = 'TRIBUTÁRIO';
+      else if (p.area && ['TRABALHO','SAÚDE','TRIBUTÁRIO','JUDICIAL','ADMINISTRATIVO'].includes(p.area)) area = p.area;
+      else area = detectarArea(assunto_lower);
       const temVenc = p.tem_prazo && p.data_vencimento;
       const dias = temVenc
         ? Math.round((new Date(p.data_vencimento + 'T12:00:00') - new Date()) / 86400000)

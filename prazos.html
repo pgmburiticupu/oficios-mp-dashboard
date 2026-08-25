@@ -117,6 +117,24 @@
   .sugestao { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.15); border-radius: 7px; padding: 10px 12px; font-size: 11px; color: var(--green); margin-bottom: 14px; }
   .loading { opacity: .5; pointer-events: none; }
 
+  /* FORMULÁRIO PJe */
+  .pje-form {
+    display: none; background: var(--card);
+    border: 1px solid rgba(34,211,238,.25); border-radius: 10px;
+    padding: 20px; margin-top: 4px;
+  }
+  .pje-form-title { font-size: 13px; font-weight: 600; color: var(--cyan); margin-bottom: 14px; }
+  .pje-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .pje-field { display: flex; flex-direction: column; gap: 4px; }
+  .pje-field label { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .pje-field input, .pje-field select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--surface); color: var(--text); }
+  .pje-processo-item { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 8px; padding: 14px; position: relative; margin-bottom: 10px; }
+  .pje-remover { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; }
+  .pje-remover:hover { color: var(--red); }
+  .btn-add-proc { background: rgba(79,127,255,.1); border: 1px dashed rgba(79,127,255,.3); color: var(--accent); border-radius: 7px; padding: 9px; width: 100%; font-size: 12px; cursor: pointer; margin-bottom: 12px; }
+  .btn-add-proc:hover { background: rgba(79,127,255,.15); }
+  .pje-footer-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
   /* PAINEL LATERAL */
   .painel-overlay {
     display: none; position: fixed; inset: 0;
@@ -307,20 +325,30 @@
           <div class="upload-icon">⚖️</div>
           <div class="upload-info">
             <div class="upload-title" style="color:var(--cyan)">Importar do PJe</div>
-            <div class="upload-desc">Tire um print da caixa de entrada do PJe e importe aqui. A IA lê os processos automaticamente.</div>
+            <div class="upload-desc">Insira os processos da caixa de entrada do PJe. Usa a data limite que o próprio PJe calcula.</div>
             <div class="upload-progress" id="pje-progress"><div class="upload-progress-bar" id="pje-bar" style="width:0%;background:linear-gradient(90deg,var(--cyan),var(--accent))"></div></div>
             <div class="upload-log" id="pje-log"></div>
           </div>
         </div>
-        <input type="file" id="pje-input" accept="image/*,.png,.jpg,.jpeg" onchange="processarPJe(this)">
         <button class="btn-upload" style="background:rgba(34,211,238,.15);border-color:rgba(34,211,238,.3);color:var(--cyan)"
-          onclick="document.getElementById('pje-input').click()">📸 Importar PJe</button>
+          onclick="abrirFormPJe()">✏️ Inserir do PJe</button>
       </div>
 
     </div>
 
 
-        <!-- KPIs -->
+        <!-- FORMULÁRIO PJe -->
+    <div class="pje-form" id="pje-manual-form">
+      <div class="pje-form-title">⚖️ Inserir processos do PJe</div>
+      <div id="pje-lista-processos"></div>
+      <button class="btn-add-proc" onclick="adicionarProc()">＋ Adicionar outro processo</button>
+      <div class="pje-footer-btns">
+        <button class="btn-cancel" onclick="document.getElementById('pje-manual-form').style.display='none'">Cancelar</button>
+        <button class="btn-primary" onclick="importarPJeManual()">⚖️ Importar processos</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
     <div class="kpis">
       <div class="kpi">
         <div class="kpi-label">Total abertos</div>
@@ -1100,7 +1128,7 @@ function setProgress(pct) {
 
 
 // ══════════════════════════════════════════════════════════════
-// IMPORTAR DO PJe — Leitura de print por IA (Claude)
+// IMPORTAR DO PJe — Formulário estruturado
 // ══════════════════════════════════════════════════════════════
 function log_pje(msg, cor) {
   const el = document.getElementById('pje-log');
@@ -1111,143 +1139,114 @@ function log_pje(msg, cor) {
   el.appendChild(linha);
   el.scrollTop = el.scrollHeight;
 }
-function setPjeProgress(pct) {
-  document.getElementById('pje-progress').style.display = 'block';
-  document.getElementById('pje-bar').style.width = pct + '%';
+
+let procCount = 0;
+
+function abrirFormPJe() {
+  const form = document.getElementById('pje-manual-form');
+  form.style.display = 'block';
+  if (document.querySelectorAll('.pje-processo-item').length === 0) adicionarProc();
+  form.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-async function processarPJe(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  document.getElementById('pje-log').innerHTML = '';
-  document.getElementById('pje-log').style.display = 'block';
-  log_pje('🖼️ Lendo imagem: ' + file.name);
-  setPjeProgress(10);
-
-  // Converter imagem para base64
-  const base64 = await new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-
-  log_pje('🤖 Enviando para análise por IA...');
-  setPjeProgress(30);
-
-  const prompt = `Você é um assistente jurídico. Analise este print da caixa de entrada do PJe e extraia TODOS os processos visíveis.
-
-Para cada processo, retorne um JSON com este formato exato:
-{
-  "processos": [
-    {
-      "numero_processo": "0801005-52.2021.8.10.0028",
-      "tipo_ato": "Intimação",
-      "prazo_dias": 30,
-      "prazo_texto": "30 dias",
-      "data_expedicao": "2026-08-24",
-      "data_limite_ciencia": "2026-09-03",
-      "assunto": "FGTS/Fundo de Garantia",
-      "vara": "1ª Vara de Buriticupu",
-      "tem_prazo": true
-    }
-  ]
+function linhaProc(id) {
+  return `
+    <button class="pje-remover" onclick="removerProc(${id})" title="Remover">✕</button>
+    <div class="pje-row">
+      <div class="pje-field" style="grid-column:1/-1">
+        <label>Número do processo (CNJ)</label>
+        <input type="text" placeholder="0801005-52.2021.8.10.0028" class="pje-numero">
+      </div>
+    </div>
+    <div class="pje-row">
+      <div class="pje-field">
+        <label>Tipo de ato</label>
+        <select class="pje-tipo">
+          <option>Intimação</option><option>Citação</option><option>Mandado</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="pje-field">
+        <label>Data de expedição</label>
+        <input type="date" class="pje-expedicao">
+      </div>
+    </div>
+    <div class="pje-row">
+      <div class="pje-field">
+        <label>Data limite para ciência</label>
+        <input type="date" class="pje-limite">
+      </div>
+      <div class="pje-field">
+        <label>Prazo (ex: 30 dias)</label>
+        <input type="text" placeholder="30 dias" class="pje-prazo">
+      </div>
+    </div>
+    <div class="pje-field">
+      <label>Assunto / Descrição</label>
+      <input type="text" placeholder="FGTS / Gratificações / etc." class="pje-assunto">
+    </div>`;
 }
 
-Regras:
-- numero_processo: formato CNJ exato (NNNNNNN-DD.AAAA.J.TT.OOOO)
-- data_expedicao: formato AAAA-MM-DD extraída de "Expedição eletrônica"
-- data_limite_ciencia: formato AAAA-MM-DD extraída de "Data limite prevista para ciência"
-- prazo_dias: número inteiro (converter "48 horas" → 0, "sem prazo" → null)
-- tem_prazo: false se "sem prazo"
-- Retorne APENAS o JSON, sem texto adicional`;
+function adicionarProc() {
+  procCount++;
+  const div = document.createElement('div');
+  div.className = 'pje-processo-item';
+  div.id = 'pje-proc-' + procCount;
+  div.innerHTML = linhaProc(procCount);
+  document.getElementById('pje-lista-processos').appendChild(div);
+}
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/png', data: base64 }},
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
+function removerProc(id) {
+  const el = document.getElementById('pje-proc-' + id);
+  if (el) el.remove();
+}
 
-    const data = await response.json();
-    setPjeProgress(70);
+async function importarPJeManual() {
+  const itens = document.querySelectorAll('.pje-processo-item');
+  let salvos = 0, erros = 0;
 
-    const texto = data.content?.[0]?.text || '';
-    log_pje('📋 Resposta recebida. Processando...');
+  for (const item of itens) {
+    const numero    = item.querySelector('.pje-numero')?.value.trim();
+    const tipo      = item.querySelector('.pje-tipo')?.value || 'Intimação';
+    const expedicao = item.querySelector('.pje-expedicao')?.value;
+    const limite    = item.querySelector('.pje-limite')?.value;
+    const prazo     = item.querySelector('.pje-prazo')?.value;
+    const assunto   = item.querySelector('.pje-assunto')?.value;
 
-    // Extrair JSON da resposta
-    const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      log_pje('❌ IA não retornou dados estruturados. Tente com um print mais nítido.', 'var(--red)');
-      setPjeProgress(100); input.value = ''; return;
-    }
+    if (!numero || !limite) continue;
 
-    const resultado = JSON.parse(jsonMatch[0]);
-    const processos = resultado.processos || [];
-    log_pje('✓ ' + processos.length + ' processo(s) identificado(s)');
-    setPjeProgress(80);
+    const area = detectarArea((assunto || '') + ' ' + tipo);
+    const dias = Math.round((new Date(limite + 'T12:00:00') - new Date()) / 86400000);
 
-    const hoje = new Date().toISOString().slice(0,10);
-    let salvos = 0, semPrazo = 0;
+    try {
+      const existe = await querySupabase('prazos_judiciais',
+        'select=id&numero_processo=eq.' + encodeURIComponent(numero));
+      if (existe.length > 0) { erros++; continue; }
 
-    for (const p of processos) {
-      if (!p.tem_prazo || !p.numero_processo) { semPrazo++; continue; }
-
-      const area = detectarArea(p.assunto + ' ' + p.tipo_ato);
-      const tipo = p.tipo_ato || 'Manifestação';
-      const venc = p.data_limite_ciencia || hoje;
-      const dias = Math.round((new Date(venc + 'T12:00:00') - new Date()) / 86400000);
-
-      const obs = 'PJe: expedido ' + (p.data_expedicao || '?') +
-        ' · prazo ' + (p.prazo_texto || '?') +
-        ' · limite ciência ' + (p.data_limite_ciencia || '?') +
-        ' · ' + (p.assunto || '') + ' · CONFERIR no PJe';
-
-      try {
-        const existe = await querySupabase('prazos_judiciais',
-          'select=id&numero_processo=eq.' + encodeURIComponent(p.numero_processo));
-        if (existe.length > 0) {
-          log_pje('  ↩ ' + p.numero_processo + ' já existe', 'var(--muted)');
-          continue;
-        }
-        await insertSupabase('prazos_judiciais', {
-          numero_processo: p.numero_processo,
-          area, tipo_prazo: tipo,
-          data_publicacao: p.data_expedicao || hoje,
-          data_vencimento: venc,
-          dias_restantes: dias,
-          status: dias < 0 ? 'vencido' : 'pendente',
-          responsavel: RESP_POR_AREA[area] || null,
-          origem: 'DJMA',
-          observacoes: obs,
-        });
-        salvos++;
-        log_pje('  ✓ ' + p.numero_processo + ' | ' + area + ' | vence ' + venc, 'var(--green)');
-      } catch(e) {
-        log_pje('  ⚠️ ' + p.numero_processo + ': ' + e.message, 'var(--yellow)');
-      }
-    }
-
-    setPjeProgress(100);
-    log_pje('🎉 ' + salvos + ' importado(s)' + (semPrazo ? ' · ' + semPrazo + ' sem prazo (ignorados)' : ''), 'var(--green)');
-    setTimeout(() => carregarDados(), 800);
-
-  } catch(err) {
-    log_pje('❌ Erro: ' + err.message, 'var(--red)');
-    setPjeProgress(100);
+      await insertSupabase('prazos_judiciais', {
+        numero_processo: numero,
+        area, tipo_prazo: tipo,
+        data_publicacao: expedicao || new Date().toISOString().slice(0,10),
+        data_vencimento: limite,
+        dias_restantes:  dias,
+        status:          dias < 0 ? 'vencido' : 'pendente',
+        responsavel:     RESP_POR_AREA[area] || null,
+        origem:          'DJMA',
+        observacoes:     'PJe: expedido ' + (expedicao || '?') + ' · prazo ' + (prazo || '?') +
+                         ' · limite ciencia ' + limite + ' · ' + (assunto || '') + ' · CONFERIR no PJe',
+      });
+      salvos++;
+    } catch(e) { erros++; }
   }
-  input.value = '';
+
+  alert(salvos + ' processo(s) importado(s)' + (erros ? ' · ' + erros + ' ignorado(s)/duplicado(s)' : '') + '.');
+  if (salvos > 0) {
+    document.getElementById('pje-manual-form').style.display = 'none';
+    document.getElementById('pje-lista-processos').innerHTML = '';
+    procCount = 0;
+    carregarDados();
+  }
 }
+
 
 async function processarPDF(input) {
   const file = input.files[0];

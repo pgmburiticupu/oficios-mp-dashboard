@@ -645,6 +645,7 @@
     <div class="painel-section">
       <div class="painel-label">Responsável</div>
       <select class="painel-select" id="p-responsavel">
+        <option value="">— Remover responsável —</option>
         <optgroup label="Procuradores">
           <option value="Benedito">Benedito — Saúde</option>
           <option value="Jucelino">Jucelino — Trabalho</option>
@@ -666,7 +667,7 @@
     </div>
 
     <div class="painel-section">
-      <div class="painel-label">Anotação do procurador</div>
+      <div class="painel-label">Anotações</div>
       <textarea class="painel-textarea" id="p-anotacao" placeholder="Descreva o que foi feito, pendências, estratégia..."></textarea>
     </div>
 
@@ -725,6 +726,7 @@
       <div class="form-field">
         <label class="form-label">Responsável</label>
         <select class="form-input" id="f-responsavel">
+          <option value="">— Remover responsável —</option>
           <optgroup label="Procuradores">
             <option value="Benedito">Benedito — Saúde</option>
             <option value="Jucelino">Jucelino — Trabalho</option>
@@ -1213,7 +1215,7 @@ function fecharPainel(event) {
 async function salvarPainel() {
   if (!painelPrazoId) return;
 
-  const responsavel    = document.getElementById('p-responsavel').value;
+  const responsavel    = document.getElementById('p-responsavel').value || null;
   const anotacao       = document.getElementById('p-anotacao').value.trim();
   const area           = document.getElementById('p-area').value;
   const tipo_prazo     = document.getElementById('p-tipo').value;

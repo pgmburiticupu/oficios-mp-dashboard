@@ -422,28 +422,12 @@
     </div>
     <button class="painel-fechar" onclick="fecharPainel()">✕</button>
   </div>
-  <div class="painel-body">
+    <div class="painel-body">
 
-    <div class="painel-section">
-      <div class="painel-label">Área</div>
-      <div id="p-area-badge"></div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="painel-section">
-        <div class="painel-label">Publicação</div>
-        <div class="painel-valor" id="p-publicacao">—</div>
-      </div>
-      <div class="painel-section">
-        <div class="painel-label">Vencimento</div>
-        <div class="painel-valor" id="p-vencimento">—</div>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="painel-section">
-        <div class="painel-label">Dias restantes</div>
-        <div id="p-dias">—</div>
+        <div class="painel-label">Processo</div>
+        <div class="painel-numero" id="p-numero" style="font-size:11px;margin-top:2px">—</div>
       </div>
       <div class="painel-section">
         <div class="painel-label">Origem</div>
@@ -452,8 +436,69 @@
     </div>
 
     <div class="painel-section">
-      <div class="painel-label">Observações do sistema</div>
-      <div class="painel-obs" id="p-obs">—</div>
+      <div class="painel-label">Área</div>
+      <select class="painel-select" id="p-area">
+        <option value="TRABALHO">Trabalho</option>
+        <option value="JUDICIAL">Judicial</option>
+        <option value="ADMINISTRATIVO">Administrativo</option>
+        <option value="TRIBUTÁRIO">Tributário</option>
+        <option value="SAÚDE">Saúde</option>
+      </select>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Tipo de prazo / Ato</div>
+      <select class="painel-select" id="p-tipo">
+        <option>Intimação</option>
+        <option>Citação</option>
+        <option>Contestação</option>
+        <option>Contrarrazões</option>
+        <option>Recurso ordinário</option>
+        <option>Apelação</option>
+        <option>Agravo</option>
+        <option>Embargos de declaração</option>
+        <option>Embargos</option>
+        <option>Impugnação</option>
+        <option>Memoriais</option>
+        <option>Manifestação</option>
+        <option>Informações</option>
+        <option>Defesa</option>
+        <option>Resposta</option>
+        <option>Recurso</option>
+        <option>Mandado</option>
+        <option>Outro</option>
+      </select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="painel-section">
+        <div class="painel-label">Publicação / Expedição</div>
+        <input type="date" class="painel-select" id="p-publicacao-edit" style="font-size:12px">
+      </div>
+      <div class="painel-section">
+        <div class="painel-label">Vencimento</div>
+        <input type="date" class="painel-select" id="p-vencimento-edit" style="font-size:12px"
+          oninput="recalcularDias()">
+      </div>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Dias restantes</div>
+      <div id="p-dias">—</div>
+    </div>
+
+    <div class="painel-section">
+      <div class="painel-label">Status</div>
+      <div class="status-btns" style="margin-top:4px">
+        <button class="btn-status btn-andamento" id="btn-andamento" onclick="selecionarStatus('em_andamento')">⏳ Em andamento</button>
+        <button class="btn-status btn-cumprido"  id="btn-cumprido"  onclick="selecionarStatus('concluido')">✅ Cumprido</button>
+        <button class="btn-status" id="btn-pendente"
+          style="background:rgba(100,116,139,.1);color:var(--sub);border-color:rgba(100,116,139,.2)"
+          onclick="selecionarStatus('pendente')">○ Pendente</button>
+        <button class="btn-status"  id="btn-vencido"
+          style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2)"
+          onclick="selecionarStatus('vencido')">🔴 Vencido</button>
+      </div>
     </div>
 
     <div class="painel-section">
@@ -468,6 +513,11 @@
     </div>
 
     <div class="painel-section">
+      <div class="painel-label">Observações do sistema</div>
+      <div class="painel-obs" id="p-obs">—</div>
+    </div>
+
+    <div class="painel-section">
       <div class="painel-label">Anotação do procurador</div>
       <textarea class="painel-textarea" id="p-anotacao" placeholder="Descreva o que foi feito, pendências, estratégia..."></textarea>
     </div>
@@ -479,10 +529,6 @@
 
   </div>
   <div class="painel-footer">
-    <div class="status-btns">
-      <button class="btn-status btn-andamento" onclick="mudarStatus('em_andamento')">⏳ Em andamento</button>
-      <button class="btn-status btn-cumprido"  onclick="mudarStatus('concluido')">✅ Cumprido</button>
-    </div>
     <button class="btn-salvar" onclick="salvarPainel()">💾 Salvar alterações</button>
   </div>
 </div>
@@ -883,38 +929,52 @@ function abrirDetalhe(id) {
 let painelPrazoId = null;
 let painelStatus  = null;
 
+function recalcularDias() {
+  const venc = document.getElementById('p-vencimento-edit').value;
+  if (!venc) return;
+  const dias = Math.round((new Date(venc + 'T12:00:00') - new Date()) / 86400000);
+  const chipCls = dias < 0 ? 'dias-red' : dias <= 5 ? 'dias-yellow' : 'dias-green';
+  const chipTxt = dias < 0 ? `● ${dias} dias` : dias <= 5 ? `⚠ ${dias} dias` : `✓ ${dias} dias`;
+  document.getElementById('p-dias').innerHTML = `<span class="dias-chip ${chipCls}">${chipTxt}</span>`;
+}
+
+function selecionarStatus(status) {
+  painelStatus = status;
+  ['pendente','em_andamento','concluido','vencido'].forEach(s => {
+    const btn = document.getElementById('btn-' + s);
+    if (btn) btn.style.opacity = s === status ? '1' : '.4';
+  });
+}
+
 function abrirPainel(id) {
   const p = todosPrazos.find(x => x.id === id);
   if (!p) return;
   painelPrazoId = id;
   painelStatus  = p.status;
 
-  // Preencher campos
-  document.getElementById('p-numero').textContent  = p.numero_processo;
-  document.getElementById('p-titulo').textContent  = p.tipo_prazo;
-  document.getElementById('p-publicacao').textContent = p.data_publicacao
-    ? new Date(p.data_publicacao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-  document.getElementById('p-vencimento').textContent = p.data_vencimento
-    ? new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-  document.getElementById('p-obs').textContent     = p.observacoes || 'Sem observações do sistema.';
-  document.getElementById('p-origem').textContent  = p.origem || '—';
-  document.getElementById('p-anotacao').value      = '';
+  // Número e origem
+  document.getElementById('p-numero').textContent = p.numero_processo;
+  document.getElementById('p-origem').textContent = p.origem || '—';
+  document.getElementById('p-obs').textContent    = p.observacoes || 'Sem observações do sistema.';
+  document.getElementById('p-anotacao').value     = '';
 
-  // Badge área
-  const cores = CORES_AREA[p.area] || { badge: 'badge-green' };
-  const style = BADGE_STYLES[cores.badge] || '';
-  document.getElementById('p-area-badge').innerHTML =
-    `<span class="area-badge" style="${style}">${p.area}</span>
-     <span style="font-size:11px;color:var(--sub);margin-left:8px">${p.tipo_prazo}</span>`;
+  // Título do painel
+  document.getElementById('p-titulo').textContent = p.assunto || p.tipo_prazo || 'Detalhes do prazo';
 
-  // Chip dias
-  const dias = p._dias || 0;
-  const chipCls = dias < 0 ? 'dias-red' : dias <= 5 ? 'dias-yellow' : 'dias-green';
-  const chipTxt = dias < 0 ? `● ${dias} dias` : dias <= 5 ? `⚠ ${dias} dias` : `✓ ${dias} dias`;
-  document.getElementById('p-dias').innerHTML = `<span class="dias-chip ${chipCls}">${chipTxt}</span>`;
-
-  // Responsável
+  // Selects editáveis
+  document.getElementById('p-area').value        = p.area || 'JUDICIAL';
+  document.getElementById('p-tipo').value        = p.tipo_prazo || 'Intimação';
   document.getElementById('p-responsavel').value = p.responsavel || 'Ruã Pablo';
+
+  // Datas editáveis
+  document.getElementById('p-publicacao-edit').value = p.data_publicacao || '';
+  document.getElementById('p-vencimento-edit').value = p.data_vencimento || '';
+
+  // Dias restantes
+  recalcularDias();
+
+  // Status — highlight do botão ativo
+  selecionarStatus(p.status || 'pendente');
 
   // Histórico
   const hist = p.historico ? JSON.parse(p.historico) : [];
@@ -936,25 +996,23 @@ function fecharPainel(event) {
   painelPrazoId = null;
 }
 
-function mudarStatus(novoStatus) {
-  painelStatus = novoStatus;
-  document.querySelectorAll('.btn-status').forEach(b => b.style.opacity = '.5');
-  const btn = novoStatus === 'concluido'
-    ? document.querySelector('.btn-cumprido')
-    : document.querySelector('.btn-andamento');
-  if (btn) btn.style.opacity = '1';
-}
-
 async function salvarPainel() {
   if (!painelPrazoId) return;
 
-  const responsavel = document.getElementById('p-responsavel').value;
-  const anotacao    = document.getElementById('p-anotacao').value.trim();
+  const responsavel    = document.getElementById('p-responsavel').value;
+  const anotacao       = document.getElementById('p-anotacao').value.trim();
+  const area           = document.getElementById('p-area').value;
+  const tipo_prazo     = document.getElementById('p-tipo').value;
+  const data_publicacao= document.getElementById('p-publicacao-edit').value;
+  const data_vencimento= document.getElementById('p-vencimento-edit').value;
+  const dias_restantes = data_vencimento
+    ? Math.round((new Date(data_vencimento + 'T12:00:00') - new Date()) / 86400000)
+    : null;
 
   // Montar histórico
   const p = todosPrazos.find(x => x.id === painelPrazoId);
   const hist = p?.historico ? JSON.parse(p.historico) : [];
-  if (anotacao || painelStatus !== p?.status) {
+  if (anotacao || painelStatus !== p?.status || area !== p?.area || tipo_prazo !== p?.tipo_prazo) {
     hist.push({
       data:     new Date().toLocaleString('pt-BR'),
       status:   painelStatus,
@@ -979,6 +1037,11 @@ async function salvarPainel() {
         },
         body: JSON.stringify({
           responsavel,
+          area,
+          tipo_prazo,
+          data_publicacao: data_publicacao || undefined,
+          data_vencimento: data_vencimento || undefined,
+          dias_restantes,
           status:    painelStatus,
           historico: JSON.stringify(hist),
           observacoes: anotacao

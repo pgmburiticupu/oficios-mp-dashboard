@@ -330,8 +330,13 @@
             <div class="upload-log" id="pje-log"></div>
           </div>
         </div>
-        <button class="btn-upload" style="background:rgba(34,211,238,.15);border-color:rgba(34,211,238,.3);color:var(--cyan)"
-          onclick="abrirFormPJe()">✏️ Inserir do PJe</button>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn-upload" style="background:rgba(34,211,238,.15);border-color:rgba(34,211,238,.3);color:var(--cyan)"
+            onclick="abrirFormPJe()">✏️ Inserir manual</button>
+          <input type="file" id="json-input" accept=".json" onchange="importarJSON(this)" style="display:none">
+          <button class="btn-upload" style="background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#c084fc"
+            onclick="document.getElementById('json-input').click()">📥 Importar JSON</button>
+        </div>
       </div>
 
     </div>

@@ -361,7 +361,7 @@
       <span class="cnt" id="cnt-judicial">—</span>
     </div>
     <div class="sitem" onclick="filtrarArea('SEM CLASSIFICAÇÃO')" id="sitem-sem-class">
-      <div class="area-dot" style="background:#f59e0b"></div> Administrativo
+      <div class="area-dot" style="background:#f59e0b"></div> Sem classificação
       <span class="cnt" id="cnt-sem-classificacao">—</span>
     </div>
     <div class="sitem" onclick="filtrarArea('TRIBUTÁRIO')">
@@ -873,7 +873,7 @@ function atualizarInterface() {
 
   // Contadores sidebar — áreas
   const areas = ['TRABALHO','JUDICIAL','SEM CLASSIFICAÇÃO','TRIBUTÁRIO','SAÚDE'];
-  const ids   = ['trabalho','judicial','administrativo','tributario','saude'];
+  const ids   = ['trabalho','judicial','sem-classificacao','tributario','saude'];
   document.getElementById('cnt-total').textContent = total;
   areas.forEach((a, i) => {
     document.getElementById('cnt-' + ids[i]).textContent =
@@ -966,8 +966,8 @@ function renderizarTabela() {
           <div class="resp-avatar" style="background:${CORES_RESP[dupla[0]]||'#334155'}">${dupla[0].slice(0,2).toUpperCase()}</div>
           ${dupla[0]}
         </div>
-        <div class="resp-chip" style="font-size:10px;opacity:.75">
-          <div class="resp-avatar" style="background:${CORES_RESP[dupla[1]]||'#334155'};width:14px;height:14px;font-size:7px">${dupla[1].slice(0,2).toUpperCase()}</div>
+        <div class="resp-chip" style="font-size:11px">
+          <div class="resp-avatar" style="background:${CORES_RESP[dupla[1]]||'#334155'}">${dupla[1].slice(0,2).toUpperCase()}</div>
           ${dupla[1]}
         </div>
       </div>`
@@ -1359,7 +1359,7 @@ const AREA_MAP = {
     "embargos à execução fiscal", "exceção de pré-executividade"
   ],
   'JUDICIAL': [
-    "licitação", "contrato administrativo", "pregão", "concorrência",
+    "licitação", "contrato sem-classificacao", "pregão", "concorrência",
     "tomada de preço", "dispensa de licitação", "inexigibilidade",
     "convênio", "concurso público", "processo seletivo", "edital",
     "improbidade administrativa", "responsabilidade civil do estado",

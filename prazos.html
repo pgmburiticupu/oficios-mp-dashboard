@@ -216,6 +216,95 @@
   }
   .btn-upload:hover { background: rgba(168,85,247,.25); }
   #pdf-input { display: none; }
+
+  /* ═══════════════════════════════════════════════
+     RESPONSIVO MOBILE
+  ════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Topbar */
+    .topbar { padding: 0 12px; gap: 8px; height: 48px; }
+    .tabs { gap: 2px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab { padding: 5px 10px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+    .topbar-right .djma-status span { display: none; }
+    .logo { display: none; }
+
+    /* Layout: sem sidebar */
+    .layout { flex-direction: column; height: auto; }
+    .sidebar {
+      width: 100%; min-width: unset;
+      border-right: none; border-bottom: 1px solid var(--border);
+      padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;
+      flex-direction: row; overflow-x: auto;
+    }
+    .sgroup { display: none; }
+    .sitem {
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border); font-size: 11px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .sitem.active { border-color: rgba(79,127,255,.4); }
+    .sitem .cnt { margin-left: 4px; }
+    .divider { display: none; }
+
+    /* Main */
+    .main { padding: 12px; gap: 12px; }
+
+    /* Cards de importação */
+    .upload-banner { flex-direction: column; gap: 10px; }
+    .upload-area { flex-direction: row; align-items: flex-start; }
+
+    /* KPIs: 2x2 em mobile */
+    .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpi { padding: 12px; }
+    .kpi-val { font-size: 22px; }
+
+    /* Tabela: cards em vez de linhas */
+    .table-wrap { border-radius: 8px; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tbody tr {
+      margin-bottom: 10px;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px; padding: 12px;
+      background: var(--card);
+    }
+    td {
+      padding: 3px 0; border: none !important;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px;
+    }
+    td:before {
+      content: attr(data-label);
+      font-size: 10px; color: var(--muted);
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; min-width: 80px; flex-shrink: 0;
+    }
+    td:first-child { border-bottom: 1px solid rgba(255,255,255,.06) !important; padding-bottom: 8px; margin-bottom: 4px; }
+    td:first-child:before { display: none; }
+    td:first-child { flex-direction: column; align-items: flex-start; gap: 2px; }
+
+    /* Painel lateral: full screen no mobile */
+    .painel { width: 100% !important; right: -100% !important; }
+    .painel.open { right: 0 !important; }
+    .status-btns { grid-template-columns: 1fr 1fr; }
+
+    /* Filtros */
+    .section-header { flex-direction: column; gap: 8px; }
+    .filters { flex-wrap: wrap; gap: 6px; }
+
+    /* Formulário PJe */
+    .pje-row { grid-template-columns: 1fr; }
+    .pje-form { padding: 14px; }
+  }
+
+  @media (max-width: 480px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .kpi-val { font-size: 20px; }
+    .page-title { font-size: 15px; }
+    .btn-primary { padding: 8px 12px; font-size: 11px; }
+  }
+
 </style>
 </head>
 <body>
@@ -788,18 +877,18 @@ function renderizarTabela() {
     const vencStr = new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
 
     return `<tr onclick="abrirPainel('${p.id}')">
-      <td>
+      <td data-label="">
         <div class="proc-num">${p.numero_processo}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">
           Município de Buriticupu ${isNovo ? '<span class="new-tag">novo</span>' : ''}
         </div>
       </td>
-      <td><span class="area-badge" style="${badgeStyle}">${p.area}</span></td>
-      <td>${p.tipo_prazo}</td>
-      <td>${vencStr}</td>
-      <td>${diasChip}</td>
-      <td>${respHtml}</td>
-      <td>
+      <td data-label="Área"><span class="area-badge" style="${badgeStyle}">${p.area}</span></td>
+      <td data-label="Tipo">${p.tipo_prazo}</td>
+      <td data-label="Vencimento">${vencStr}</td>
+      <td data-label="Dias">${diasChip}</td>
+      <td data-label="Responsável">${respHtml}</td>
+      <td data-label="Status">
         ${p.status === 'concluido'
           ? '<span style="font-size:11px;color:var(--green);font-weight:600">✅ Cumprido</span>'
           : p.status === 'em_andamento'
@@ -808,7 +897,7 @@ function renderizarTabela() {
               ? '<span style="font-size:11px;color:var(--red);font-weight:600">🔴 Vencido</span>'
               : '<span style="font-size:11px;color:var(--muted)">Pendente</span>'}
       </td>
-      <td>${origemHtml}</td>
+      <td data-label="Origem">${origemHtml}</td>
     </tr>`;
   }).join('');
 

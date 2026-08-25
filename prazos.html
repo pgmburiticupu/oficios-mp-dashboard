@@ -1429,7 +1429,7 @@ async function processarPJeImagem(input) {
     log_pje('✓ ' + processos.length + ' processo(s) identificado(s) pela IA');
 
     const hoje = new Date().toISOString().slice(0,10);
-    let salvos = 0, semPrazo = 0, duplicados = 0;
+    let salvos = 0, duplicados = 0, erros = 0;
 
     const grauPJe = document.getElementById('pje-grau')?.value || '1';
 

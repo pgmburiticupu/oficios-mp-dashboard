@@ -360,9 +360,9 @@
       <div class="area-dot" style="background:#22c55e"></div> Judicial
       <span class="cnt" id="cnt-judicial">—</span>
     </div>
-    <div class="sitem" onclick="filtrarArea('ADMINISTRATIVO')">
+    <div class="sitem" onclick="filtrarArea('SEM CLASSIFICAÇÃO')">
       <div class="area-dot" style="background:#f59e0b"></div> Administrativo
-      <span class="cnt" id="cnt-administrativo">—</span>
+      <span class="cnt" id="cnt-sem-classificacao">—</span>
     </div>
     <div class="sitem" onclick="filtrarArea('TRIBUTÁRIO')">
       <div class="area-dot" style="background:#a78bfa"></div> Tributário
@@ -379,7 +379,7 @@
     <div class="sitem" onclick="filtrarResp('Jucelino')">👤 Jucelino <span style="font-size:9px;color:var(--muted)">Trabalho</span></div>
     <div class="sitem" onclick="filtrarResp('Ruã Pablo')">👤 Ruã Pablo <span style="font-size:9px;color:var(--muted)">Judicial</span></div>
     <div class="sitem" onclick="filtrarResp('Gustavo')">👤 Gustavo <span style="font-size:9px;color:var(--muted)">Tributário</span></div>
-    <div class="sitem" onclick="filtrarResp('Eduardo')">👤 Eduardo <span style="font-size:9px;color:var(--muted)">Administrativo</span></div>
+    <div class="sitem" onclick="filtrarResp('Eduardo')">👤 Eduardo <span style="font-size:9px;color:var(--muted)">Sem classificação</span></div>
 
     <div class="divider"></div>
     <div class="sgroup">Grau</div>
@@ -582,7 +582,7 @@
       <select class="painel-select" id="p-area">
         <option value="TRABALHO">Trabalho</option>
         <option value="JUDICIAL">Judicial</option>
-        <option value="ADMINISTRATIVO">Administrativo</option>
+        <option value="SEM CLASSIFICAÇÃO">Sem classificação</option>
         <option value="TRIBUTÁRIO">Tributário</option>
         <option value="SAÚDE">Saúde</option>
       </select>
@@ -646,11 +646,19 @@
     <div class="painel-section">
       <div class="painel-label">Responsável</div>
       <select class="painel-select" id="p-responsavel">
-        <option value="Benedito">Benedito — Saúde</option>
-        <option value="Jucelino">Jucelino — Trabalho</option>
-        <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
-        <option value="Gustavo">Gustavo — Tributário</option>
-        <option value="Eduardo">Eduardo — Administrativo</option>
+        <optgroup label="Procuradores">
+          <option value="Benedito">Benedito — Saúde</option>
+          <option value="Jucelino">Jucelino — Trabalho</option>
+          <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
+          <option value="Gustavo">Gustavo — Tributário</option>
+          <option value="Eduardo">Eduardo</option>
+        </optgroup>
+        <optgroup label="Analistas">
+          <option value="Eduarda">Eduarda — Trabalho</option>
+          <option value="Nádia">Nádia — Judicial</option>
+          <option value="Rômulo">Rômulo — Saúde</option>
+          <option value="Erika">Erika — Tributário</option>
+        </optgroup>
       </select>
     </div>
 
@@ -690,7 +698,7 @@
         <select class="form-input" id="f-area" onchange="sugerirResponsavel()">
           <option value="TRABALHO">Trabalho</option>
           <option value="JUDICIAL">Judicial</option>
-          <option value="ADMINISTRATIVO">Administrativo</option>
+          <option value="SEM CLASSIFICAÇÃO">Sem classificação</option>
           <option value="TRIBUTÁRIO">Tributário</option>
           <option value="SAÚDE">Saúde</option>
         </select>
@@ -719,11 +727,19 @@
       <div class="form-field">
         <label class="form-label">Responsável</label>
         <select class="form-input" id="f-responsavel">
-          <option value="Benedito">Benedito — Saúde</option>
-          <option value="Jucelino">Jucelino — Trabalho</option>
-          <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
-          <option value="Gustavo">Gustavo — Tributário</option>
-          <option value="Eduardo">Eduardo — Administrativo</option>
+          <optgroup label="Procuradores">
+            <option value="Benedito">Benedito — Saúde</option>
+            <option value="Jucelino">Jucelino — Trabalho</option>
+            <option value="Ruã Pablo">Ruã Pablo — Judicial</option>
+            <option value="Gustavo">Gustavo — Tributário</option>
+            <option value="Eduardo">Eduardo</option>
+          </optgroup>
+          <optgroup label="Analistas">
+            <option value="Eduarda">Eduarda — Trabalho</option>
+            <option value="Nádia">Nádia — Judicial</option>
+            <option value="Rômulo">Rômulo — Saúde</option>
+            <option value="Erika">Erika — Tributário</option>
+          </optgroup>
         </select>
       </div>
     </div>
@@ -786,7 +802,7 @@ let grauAtivo = 1;
 const CORES_AREA = {
   'TRABALHO':      { badge: 'badge-blue',   bg: '#3b82f6' },
   'JUDICIAL':      { badge: 'badge-green',  bg: '#22c55e' },
-  'ADMINISTRATIVO':{ badge: 'badge-yellow', bg: '#f59e0b' },
+  'SEM CLASSIFICAÇÃO':{ badge: 'badge-yellow', bg: '#f59e0b' },
   'TRIBUTÁRIO':    { badge: 'badge-purple', bg: '#a78bfa' },
   'SAÚDE':         { badge: 'badge-cyan',   bg: '#22d3ee' },
 };
@@ -801,11 +817,17 @@ const BADGE_STYLES = {
 };
 
 const CORES_RESP = {
-  'Benedito':  '#22577a',  // Saúde
-  'Jucelino':  '#1e3a5f',  // Trabalho
-  'Ruã Pablo': '#5b21b6',  // Judicial
-  'Gustavo':   '#7c2d12',  // Tributário
-  'Eduardo':   '#065f46',  // Administrativo
+  // Procuradores
+  'Benedito':  '#22577a',
+  'Jucelino':  '#1e3a5f',
+  'Ruã Pablo': '#5b21b6',
+  'Gustavo':   '#7c2d12',
+  'Eduardo':   '#374151',
+  // Analistas
+  'Eduarda':   '#1e4060',
+  'Nádia':     '#4c1d8f',
+  'Rômulo':    '#1a4a6b',
+  'Erika':     '#7a2010',
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -854,7 +876,7 @@ function atualizarInterface() {
   document.getElementById('kpi-total-sub').textContent = `+${djmaHoje} hoje via DJMA`;
 
   // Contadores sidebar — áreas
-  const areas = ['TRABALHO','JUDICIAL','ADMINISTRATIVO','TRIBUTÁRIO','SAÚDE'];
+  const areas = ['TRABALHO','JUDICIAL','SEM CLASSIFICAÇÃO','TRIBUTÁRIO','SAÚDE'];
   const ids   = ['trabalho','judicial','administrativo','tributario','saude'];
   document.getElementById('cnt-total').textContent = total;
   areas.forEach((a, i) => {
@@ -1254,7 +1276,7 @@ const RESP_POR_AREA = {
   'TRABALHO':       'Jucelino',
   'JUDICIAL':       'Ruã Pablo',
   'TRIBUTÁRIO':     'Gustavo',
-  'ADMINISTRATIVO': 'Eduardo',
+  'SEM CLASSIFICAÇÃO': 'Eduardo',
 };
 
 const TERMOS_PGM = [
@@ -1344,7 +1366,7 @@ const AREA_MAP = {
     "família", "sucessão", "inventário", "efeito suspensivo",
     "impugnação", "embargos à execução", "exceção de pré"
   ],
-  'ADMINISTRATIVO': []  // fallback
+  'SEM CLASSIFICAÇÃO': []  // fallback
 };
 
 const FERIADOS = ["2026-01-01","2026-04-03","2026-04-21","2026-05-01","2026-06-04",
@@ -1528,8 +1550,8 @@ async function processarPJeImagem(input) {
       if (ehSaude) area = 'SAÚDE';
       else if (ehTrabalho) area = 'TRABALHO';
       else if (ehTributario) area = 'TRIBUTÁRIO';
-      else if (p.area && ['TRABALHO','SAÚDE','TRIBUTÁRIO','JUDICIAL','ADMINISTRATIVO'].includes(p.area)) area = p.area;
-      else area = detectarArea(assunto_lower);
+      else if (p.area && ['TRABALHO','SAÚDE','TRIBUTÁRIO','JUDICIAL','SEM CLASSIFICAÇÃO'].includes(p.area)) area = p.area;
+      else area = 'SEM CLASSIFICAÇÃO';
       const temVenc = p.tem_prazo && p.data_vencimento;
       const dias = temVenc
         ? Math.round((new Date(p.data_vencimento + 'T12:00:00') - new Date()) / 86400000)

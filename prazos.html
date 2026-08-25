@@ -1431,45 +1431,51 @@ async function processarPJeImagem(input) {
     const hoje = new Date().toISOString().slice(0,10);
     let salvos = 0, semPrazo = 0, duplicados = 0;
 
+    const grauPJe = document.getElementById('pje-grau')?.value || '1';
+
     for (const p of processos) {
-      if (!p.tem_prazo || !p.numero_processo || !p.data_vencimento) { semPrazo++; continue; }
+      if (!p.numero_processo) { erros++; continue; }
 
       const area = detectarArea((p.assunto || '') + ' ' + (p.tipo_prazo || ''));
-      const dias = Math.round((new Date(p.data_vencimento + 'T12:00:00') - new Date()) / 86400000);
+      const temVenc = p.tem_prazo && p.data_vencimento;
+      const dias = temVenc
+        ? Math.round((new Date(p.data_vencimento + 'T12:00:00') - new Date()) / 86400000)
+        : null;
 
       try {
         const existe = await querySupabase('prazos_judiciais',
           'select=id&numero_processo=eq.' + encodeURIComponent(p.numero_processo));
         if (existe.length > 0) { duplicados++; continue; }
 
-        const grauPJe = document.getElementById('pje-grau')?.value || '1';
         await insertSupabase('prazos_judiciais', {
           numero_processo: p.numero_processo,
           area,
           tipo_prazo:      p.tipo_prazo || 'Intimação',
           data_publicacao: p.data_expedicao || hoje,
-          data_vencimento: p.data_vencimento,
+          data_vencimento: temVenc ? p.data_vencimento : hoje,
           dias_restantes:  dias,
-          status:          dias < 0 ? 'vencido' : 'pendente',
+          status:          temVenc ? (dias < 0 ? 'vencido' : 'pendente') : 'sem_prazo',
           responsavel:     RESP_POR_AREA[area] || null,
           origem:          'DJMA',
           grau:            parseInt(grauPJe),
           observacoes:     'PJe ' + (grauPJe === '2' ? '2º Grau (TJ-MA)' : '1º Grau') +
-                           ': expedido ' + (p.data_expedicao || '?') + ' · limite ciência ' +
-                           p.data_vencimento + ' · ' + (p.assunto || '') + ' · CONFERIR no PJe',
+                           ': expedido ' + (p.data_expedicao || '?') +
+                           (temVenc ? ' · limite ciência ' + p.data_vencimento : ' · SEM PRAZO definido') +
+                           ' · ' + (p.assunto || '') + ' · CONFERIR no PJe',
         });
         salvos++;
-        log_pje('  ✓ ' + p.numero_processo + ' | ' + area + ' | vence ' +
-          p.data_vencimento.split('-').reverse().join('/'), 'var(--green)');
+        log_pje('  ✓ ' + p.numero_processo + ' | ' + area + ' | ' +
+          (temVenc ? 'vence ' + p.data_vencimento.split('-').reverse().join('/') : 'sem prazo'), 'var(--green)');
       } catch(e) {
         log_pje('  ⚠️ ' + p.numero_processo + ': ' + e.message, 'var(--yellow)');
+        erros++;
       }
     }
 
     setPjeProgress(100);
     log_pje('🎉 ' + salvos + ' importado(s)' +
       (duplicados ? ' · ' + duplicados + ' já existiam' : '') +
-      (semPrazo ? ' · ' + semPrazo + ' sem prazo (ignorados)' : ''), 'var(--green)');
+      (erros ? ' · ' + erros + ' com erro' : ''), 'var(--green)');
 
     if (salvos > 0) setTimeout(() => carregarDados(), 800);
 

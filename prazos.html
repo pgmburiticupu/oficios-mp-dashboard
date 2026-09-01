@@ -1179,6 +1179,24 @@ async function salvarPrazo() {
   const diasRestantes = Math.round((vencDate - hoje) / 86400000);
 
   try {
+    // Verificar se já existe
+    const jaExiste = await querySupabase('prazos_judiciais',
+      'select=id,area,data_vencimento&numero_processo=eq.' + encodeURIComponent(processo));
+
+    if (jaExiste.length > 0) {
+      const ex = jaExiste[0];
+      const vencEx = ex.data_vencimento
+        ? new Date(ex.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+      const ok = confirm(
+        'AVISO: Este processo já existe no sistema!\n\n' +
+        'Número: ' + processo + '\n' +
+        'Área: ' + (ex.area || '—') + '\n' +
+        'Vencimento atual: ' + vencEx + '\n\n' +
+        'Deseja adicionar mesmo assim como novo registro?'
+      );
+      if (!ok) return;
+    }
+
     const error = await insertSupabase('prazos_judiciais', {
       numero_processo: processo,
       area,

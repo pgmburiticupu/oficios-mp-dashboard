@@ -594,7 +594,7 @@
             </tr>
           </thead>
           <tbody id="tabela-corpo">
-            <tr><td colspan="7" class="empty-state">Carregando prazos...</td></tr>
+            <tr><td colspan="9" class="empty-state" style="color:var(--muted)">Carregando prazos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -911,14 +911,14 @@ async function carregarDados() {
   try {
     const data = await querySupabase(
       'prazos_judiciais',
-      'select=*&status=neq.concluido&order=data_vencimento.asc'
+      'select=*&order=data_vencimento.asc'
     );
     todosPrazos = data || [];
     atualizarInterface();
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
     document.getElementById('tabela-corpo').innerHTML =
-      `<tr><td colspan="7" class="empty-state" style="color:var(--red)">Erro: ${err.message}</td></tr>`;
+      `<tr><td colspan="9" class="empty-state" style="color:var(--red)">Erro: ${err.message}</td></tr>`;
   }
 }
 
@@ -1021,7 +1021,7 @@ function renderizarTabela() {
 
   if (!prazos.length) {
     document.getElementById('tabela-corpo').innerHTML =
-      '<tr><td colspan="7" class="empty-state">Nenhum prazo encontrado para este filtro.</td></tr>';
+      '<tr><td colspan="9" class="empty-state">Nenhum prazo encontrado para este filtro.</td></tr>';
     return;
   }
 

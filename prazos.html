@@ -632,21 +632,30 @@
       <select class="painel-select" id="p-tipo">
         <option>Intimação</option>
         <option>Citação</option>
-        <option>Contestação</option>
-        <option>Contrarrazões</option>
-        <option>Recurso ordinário</option>
-        <option>Apelação</option>
-        <option>Agravo</option>
-        <option>Embargos de declaração</option>
-        <option>Embargos</option>
-        <option>Impugnação</option>
-        <option>Memoriais</option>
-        <option>Manifestação</option>
-        <option>Informações</option>
-        <option>Defesa</option>
-        <option>Resposta</option>
-        <option>Recurso</option>
-        <option>Mandado</option>
+        <optgroup label="Prazos em dias úteis">
+          <option>Contestação</option>
+          <option>Contrarrazões</option>
+          <option>Recurso ordinário</option>
+          <option>Apelação</option>
+          <option>Agravo</option>
+          <option>Embargos de declaração</option>
+          <option>Embargos</option>
+          <option>Impugnação</option>
+          <option>Memoriais</option>
+          <option>Manifestação</option>
+          <option>Informações</option>
+          <option>Defesa</option>
+          <option>Resposta</option>
+          <option>Recurso</option>
+          <option>Mandado</option>
+        </optgroup>
+        <optgroup label="Prazos em horas (dias corridos)">
+          <option value="Prazo 24h">Prazo 24h (1 dia corrido)</option>
+          <option value="Prazo 48h">Prazo 48h (2 dias corridos)</option>
+          <option value="Prazo 72h">Prazo 72h (3 dias corridos)</option>
+        </optgroup>
+        <option>Intimação</option>
+        <option>Citação</option>
         <option>Outro</option>
       </select>
     </div>
@@ -1029,7 +1038,9 @@ function renderizarTabela() {
     const cores = CORES_AREA[p.area] || { badge: 'badge-green', bg: '#22c55e' };
     const badgeStyle = BADGE_STYLES[cores.badge] || '';
 
-    const diasChip = p.status === 'concluido'
+    // Detectar prazo em horas no tipo
+  const matchH = (p.tipo_prazo||'').match(/(\d+)\s*[Hh]/);
+  const diasChip = p.status === 'concluido'
       ? `<span class="dias-chip" style="background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)">✔ Cumprido</span>`
       : p.status === 'transitado'
         ? `<span class="dias-chip" style="background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2)">⚖️ Transitado</span>`
@@ -1537,6 +1548,13 @@ const PRAZOS_LEGAIS = {
   "recurso": 15,
 };
 
+// Prazos em HORAS (dias corridos, não úteis)
+const PRAZOS_HORAS = {
+  "72": 3,   // 72h = 3 dias corridos
+  "48": 2,   // 48h = 2 dias corridos
+  "24": 1,   // 24h = 1 dia corrido
+};
+
 // Mapeamento assunto → área (PGM Buriticupu)
 // Ordem importa: primeiro match vence
 const AREA_MAP = {
@@ -1624,7 +1642,28 @@ function proximoDiaUtil(d) {
 // art. 219:    conta-se apenas dias úteis
 // art. 183:    Fazenda Pública tem prazo em DOBRO (aplicado por padrão)
 function calcularPrazoCPC(dataDisponibilizacao, tipo, aplicarDobro = true) {
-  const base = PRAZOS_LEGAIS[tipo.toLowerCase()] || 15;
+  const tipoLower = tipo.toLowerCase();
+
+  // Verificar se é prazo em horas (72h, 48h, 24h) — conta dias CORRIDOS
+  const matchHoras = tipoLower.match(/(\d+)\s*h/);
+  if (matchHoras) {
+    const horas = matchHoras[1];
+    const diasCorridos = PRAZOS_HORAS[horas] || Math.ceil(parseInt(horas) / 24);
+    const publicacao = proximoDiaUtil(dataDisponibilizacao);
+    const venc = new Date(publicacao);
+    venc.setDate(venc.getDate() + diasCorridos);
+    return {
+      publicacao: publicacao.toISOString().slice(0,10),
+      inicio:     publicacao.toISOString().slice(0,10),
+      vencimento: venc.toISOString().slice(0,10),
+      diasUteis:  diasCorridos,
+      dobro:      false,
+      emHoras:    true,
+      horas:      horas,
+    };
+  }
+
+  const base = PRAZOS_LEGAIS[tipoLower] || 15;
   const dias = aplicarDobro ? base * 2 : base;
 
   const publicacao = proximoDiaUtil(dataDisponibilizacao);
@@ -1641,6 +1680,7 @@ function calcularPrazoCPC(dataDisponibilizacao, tipo, aplicarDobro = true) {
     vencimento: atual.toISOString().slice(0,10),
     diasUteis:  dias,
     dobro:      aplicarDobro,
+    emHoras:    false,
   };
 }
 

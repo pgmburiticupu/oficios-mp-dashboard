@@ -175,6 +175,8 @@
   }
   .btn-status:hover { opacity: .8; }
   .btn-andamento { background: rgba(245,158,11,.12); color: var(--yellow); border-color: rgba(245,158,11,.25); }
+  .btn-transitado { background: rgba(99,102,241,.12); color: #818cf8; border-color: rgba(99,102,241,.25); }
+  .btn-2grau { background: rgba(168,85,247,.12); color: #c084fc; border-color: rgba(168,85,247,.25); }
   .btn-cumprido  { background: rgba(34,197,94,.12);  color: var(--green);  border-color: rgba(34,197,94,.25); }
   .btn-salvar    { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .btn-salvar:hover { opacity: .9; }
@@ -675,9 +677,12 @@
         <button class="btn-status" id="btn-pendente"
           style="background:rgba(100,116,139,.1);color:var(--sub);border-color:rgba(100,116,139,.2)"
           onclick="selecionarStatus('pendente')">○ Pendente</button>
-        <button class="btn-status"  id="btn-vencido"
+        <button class="btn-status" id="btn-vencido"
           style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2)"
           onclick="selecionarStatus('vencido')">🔴 Vencido</button>
+        <button class="btn-status btn-transitado" id="btn-transitado" onclick="selecionarStatus('transitado')" style="grid-column:1/-1">
+          ⚖️ Transitado e Julgado
+        </button>
       </div>
     </div>
 
@@ -734,6 +739,10 @@
   </div>
   <div class="painel-footer">
     <button class="btn-salvar" onclick="salvarPainel()">💾 Salvar alterações</button>
+    <button class="btn-2grau btn-status" onclick="enviarPara2Grau()"
+      id="btn-enviar-2grau" style="display:none;margin-top:4px;grid-column:1/-1;width:100%;padding:10px">
+      🏛️ Enviar para 2º Grau
+    </button>
   </div>
 </div>
 
@@ -918,7 +927,7 @@ function atualizarInterface() {
   // Calcular dias restantes em tempo real
   todosPrazos.forEach(p => {
     // Congelar prazo quando cumprido
-    if (p.status === 'concluido') {
+    if (p.status === 'concluido' || p.status === 'transitado') {
       p._dias = null; // não conta mais
     } else {
       const venc = new Date(p.data_vencimento + 'T00:00:00');
@@ -1023,7 +1032,9 @@ function renderizarTabela() {
 
     const diasChip = p.status === 'concluido'
       ? `<span class="dias-chip" style="background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)">✔ Cumprido</span>`
-      : dias < 0
+      : p.status === 'transitado'
+        ? `<span class="dias-chip" style="background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2)">⚖️ Transitado</span>`
+        : dias < 0
         ? `<span class="dias-chip dias-red">● ${dias} dias</span>`
         : dias <= 5
           ? `<span class="dias-chip dias-yellow">⚠ ${dias} dias</span>`
@@ -1062,11 +1073,13 @@ function renderizarTabela() {
       <td data-label="Status">
         ${p.status === 'concluido'
           ? '<span style="font-size:11px;color:var(--green);font-weight:600">✅ Cumprido</span>'
-          : p.status === 'em_andamento'
-            ? '<span style="font-size:11px;color:var(--yellow);font-weight:600">⏳ Em andamento</span>'
-            : p.status === 'vencido'
-              ? '<span style="font-size:11px;color:var(--red);font-weight:600">🔴 Vencido</span>'
-              : '<span style="font-size:11px;color:var(--muted)">Pendente</span>'}
+          : p.status === 'transitado'
+            ? '<span style="font-size:11px;color:#818cf8;font-weight:600">⚖️ Transitado</span>'
+            : p.status === 'em_andamento'
+              ? '<span style="font-size:11px;color:var(--yellow);font-weight:600">⏳ Em andamento</span>'
+              : p.status === 'vencido'
+                ? '<span style="font-size:11px;color:var(--red);font-weight:600">🔴 Vencido</span>'
+                : '<span style="font-size:11px;color:var(--muted)">Pendente</span>'}
       </td>
       <td data-label="Origem">${origemHtml}</td>
     </tr>`;
@@ -1249,6 +1262,68 @@ function abrirDetalhe(id) {
 let painelPrazoId = null;
 let painelStatus  = null;
 
+async function enviarPara2Grau() {
+  if (!painelPrazoId) return;
+  const p = todosPrazos.find(x => x.id === painelPrazoId);
+  if (!p) return;
+
+  const ok = confirm(
+    'Enviar para 2º Grau?\n\n' +
+    'Processo: ' + p.numero_processo + '\n' +
+    'Área: ' + p.area + '\n\n' +
+    'O processo será movido para a aba de 2º Grau e o prazo atual será encerrado.\n' +
+    'Confirma?'
+  );
+  if (!ok) return;
+
+  const btn = document.getElementById('btn-enviar-2grau');
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+
+  try {
+    // Marcar atual como transitado (foi para recurso)
+    await fetch(`${SUPABASE_URL}/rest/v1/prazos_judiciais?id=eq.${painelPrazoId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'transitado',
+        observacoes: (p.observacoes || '') + '\n[Recurso enviado para 2º Grau em ' + new Date().toLocaleString('pt-BR') + ']'
+      })
+    });
+
+    // Criar novo registro no 2º grau
+    await insertSupabase('prazos_judiciais', {
+      numero_processo: p.numero_processo,
+      area:            p.area,
+      tipo_prazo:      'Recurso',
+      data_publicacao: new Date().toISOString().slice(0,10),
+      data_vencimento: new Date(Date.now() + 30 * 86400000).toISOString().slice(0,10),
+      dias_restantes:  30,
+      status:          'pendente',
+      responsavel:     p.responsavel,
+      origem:          p.origem,
+      grau:            2,
+      observacoes:     'Recurso do processo ' + p.numero_processo + ' (1º Grau) · Área: ' + p.area,
+    });
+
+    fecharPainel();
+    await carregarDados();
+
+    // Mudar automaticamente para aba 2º Grau
+    mudarGrauAba(2);
+    alert('✅ Processo enviado para o 2º Grau!\nUm novo registro foi criado na aba 2º Grau com prazo de 30 dias.');
+
+  } catch(e) {
+    alert('Erro: ' + e.message);
+    btn.textContent = '🏛️ Enviar para 2º Grau';
+    btn.disabled = false;
+  }
+}
+
 function recalcularDias() {
   const venc = document.getElementById('p-vencimento-edit').value;
   if (!venc) return;
@@ -1266,13 +1341,16 @@ function recalcularDias() {
 
 function selecionarStatus(status) {
   painelStatus = status;
-  ['pendente','em_andamento','concluido','vencido'].forEach(s => {
+  ['pendente','em_andamento','concluido','vencido','transitado'].forEach(s => {
     const btn = document.getElementById('btn-' + s);
     if (btn) btn.style.opacity = s === status ? '1' : '.4';
   });
-  // Mostrar campo de protocolo apenas quando cumprido
+  // Protocolo: mostrar quando cumprido ou transitado
   const proto = document.getElementById('protocolo-box');
-  if (proto) proto.classList.toggle('open', status === 'concluido');
+  if (proto) proto.classList.toggle('open', status === 'concluido' || status === 'transitado');
+  // Botão 2º grau: mostrar quando é 1º grau
+  const btn2g = document.getElementById('btn-enviar-2grau');
+  if (btn2g) btn2g.style.display = grauAtivo === 1 ? 'block' : 'none';
   // Atualizar chip de dias
   recalcularDias();
 }
@@ -1326,6 +1404,10 @@ function abrirPainel(id) {
         ${h.anotacao ? '<br>' + h.anotacao : ''}
       </div>`).join('')
     : '<div style="font-size:11px;color:var(--muted)">Sem registros ainda.</div>';
+
+  // Mostrar/ocultar botão 2º grau
+  const btn2g = document.getElementById('btn-enviar-2grau');
+  if (btn2g) btn2g.style.display = (grauAtivo === 1) ? 'block' : 'none';
 
   document.getElementById('painel-overlay').classList.add('open');
   document.getElementById('painel-lateral').classList.add('open');

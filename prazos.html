@@ -917,15 +917,20 @@ function atualizarInterface() {
 
   // Calcular dias restantes em tempo real
   todosPrazos.forEach(p => {
-    const venc = new Date(p.data_vencimento + 'T00:00:00');
-    p._dias = Math.round((venc - hoje) / 86400000);
+    // Congelar prazo quando cumprido
+    if (p.status === 'concluido') {
+      p._dias = null; // não conta mais
+    } else {
+      const venc = new Date(p.data_vencimento + 'T00:00:00');
+      p._dias = Math.round((venc - hoje) / 86400000);
+    }
   });
 
   // KPIs
   const prazosGrau = todosPrazos.filter(p => (p.grau || 1) === grauAtivo);
   const total    = prazosGrau.length;
-  const vencidos = prazosGrau.filter(p => p._dias < 0).length;
-  const criticos = prazosGrau.filter(p => p._dias >= 0 && p._dias <= 5).length;
+  const vencidos = prazosGrau.filter(p => p._dias !== null && p._dias < 0).length;
+  const criticos = prazosGrau.filter(p => p._dias !== null && p._dias >= 0 && p._dias <= 5).length;
   const noPrazo  = total - vencidos - criticos;
   const djmaHoje = prazosGrau.filter(p => p.data_publicacao === new Date().toISOString().slice(0,10) && p.origem === 'DJMA').length;
 
@@ -1016,11 +1021,13 @@ function renderizarTabela() {
     const cores = CORES_AREA[p.area] || { badge: 'badge-green', bg: '#22c55e' };
     const badgeStyle = BADGE_STYLES[cores.badge] || '';
 
-    const diasChip = dias < 0
-      ? `<span class="dias-chip dias-red">● ${dias} dias</span>`
-      : dias <= 5
-        ? `<span class="dias-chip dias-yellow">⚠ ${dias} dias</span>`
-        : `<span class="dias-chip dias-green">✓ ${dias} dias</span>`;
+    const diasChip = p.status === 'concluido'
+      ? `<span class="dias-chip" style="background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)">✔ Cumprido</span>`
+      : dias < 0
+        ? `<span class="dias-chip dias-red">● ${dias} dias</span>`
+        : dias <= 5
+          ? `<span class="dias-chip dias-yellow">⚠ ${dias} dias</span>`
+          : `<span class="dias-chip dias-green">✓ ${dias} dias</span>`;
 
     const respHtml = p.responsavel
     ? `<div class="resp-chip">
@@ -1245,6 +1252,12 @@ let painelStatus  = null;
 function recalcularDias() {
   const venc = document.getElementById('p-vencimento-edit').value;
   if (!venc) return;
+  // Se status for cumprido, mostra badge fixo
+  if (painelStatus === 'concluido') {
+    document.getElementById('p-dias').innerHTML =
+      `<span class="dias-chip" style="background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)">✔ Cumprido</span>`;
+    return;
+  }
   const dias = Math.round((new Date(venc + 'T12:00:00') - new Date()) / 86400000);
   const chipCls = dias < 0 ? 'dias-red' : dias <= 5 ? 'dias-yellow' : 'dias-green';
   const chipTxt = dias < 0 ? `● ${dias} dias` : dias <= 5 ? `⚠ ${dias} dias` : `✓ ${dias} dias`;
@@ -1260,6 +1273,8 @@ function selecionarStatus(status) {
   // Mostrar campo de protocolo apenas quando cumprido
   const proto = document.getElementById('protocolo-box');
   if (proto) proto.classList.toggle('open', status === 'concluido');
+  // Atualizar chip de dias
+  recalcularDias();
 }
 
 function abrirPainel(id) {

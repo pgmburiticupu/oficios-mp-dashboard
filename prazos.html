@@ -2289,28 +2289,74 @@ function gerarRelatorio() {
     porMesCumprido[chave].push(p);
   });
 
+  const AREAS_ORDEM = ['SAÚDE','TRABALHO','JUDICIAL','TRIBUTÁRIO','SEM CLASSIFICAÇÃO'];
+  const CORES_AREA_REL = {
+    'SAÚDE':             { bg:'#f0fdf4', borda:'#86efac', titulo:'#166534', icone:'🏥' },
+    'TRABALHO':          { bg:'#eff6ff', borda:'#93c5fd', titulo:'#1d4ed8', icone:'⚖️' },
+    'JUDICIAL':          { bg:'#faf5ff', borda:'#c4b5fd', titulo:'#6d28d9', icone:'🏛️' },
+    'TRIBUTÁRIO':        { bg:'#fff7ed', borda:'#fdba74', titulo:'#c2410c', icone:'💰' },
+    'SEM CLASSIFICAÇÃO': { bg:'#f8fafc', borda:'#cbd5e1', titulo:'#475569', icone:'📁' },
+  };
+
   let secaoCumpridos = '';
   if (cumpridos.length > 0) {
-    secaoCumpridos = `
-    <div style="page-break-before:always">
-      <div style="border-left:4px solid #22c55e;padding:6px 14px;background:#f0fdf4;margin-bottom:16px;border-radius:0 5px 5px 0">
-        <span style="font-size:16px;font-weight:700;color:#166534">✔️ Prazos Cumpridos — RPM</span>
-        <span style="font-size:11px;color:#64748b;margin-left:12px">${cumpridos.length} processo(s) cumprido(s)</span>
-      </div>
-      <p style="font-size:11px;color:#64748b;margin-bottom:12px">Esta seção é separada para inclusão no Relatório de Produtividade Mensal (RPM).</p>`;
+    secaoCumpridos = `<div style="page-break-before:always">
+      <div style="border-left:4px solid #22c55e;padding:8px 16px;background:#f0fdf4;margin-bottom:20px;border-radius:0 6px 6px 0">
+        <div style="font-size:17px;font-weight:700;color:#166534">✔️ Prazos Cumpridos — RPM</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">Relatório de Produtividade Mensal · PGM Buriticupu · ${cumpridos.length} processo(s)</div>
+      </div>`;
 
     Object.keys(porMesCumprido).sort().forEach(chave => {
       const [ano, mes] = chave.split('-');
-      const lista = porMesCumprido[chave];
-      secaoCumpridos += `
-      <div style="margin-bottom:20px">
-        <p style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px;text-transform:capitalize">${nomeMes(ano, mes)} (${lista.length})</p>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #bbf7d0;border-radius:5px">
-          ${cabecalhoCumpridos}
-          <tbody>${lista.map(linhaCumprido).join('')}</tbody>
-        </table>
-      </div>`;
+      const listaMes = porMesCumprido[chave];
+
+      // Separar por área
+      const porArea = {};
+      listaMes.forEach(p => {
+        const area = p.area || 'SEM CLASSIFICAÇÃO';
+        if (!porArea[area]) porArea[area] = [];
+        porArea[area].push(p);
+      });
+
+      secaoCumpridos += `<div style="margin-bottom:24px">
+        <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;text-transform:capitalize">
+          📅 ${nomeMes(ano, mes)} <span style="font-size:12px;font-weight:400;color:#64748b">(${listaMes.length} processo(s))</span>
+        </div>`;
+
+      AREAS_ORDEM.forEach(area => {
+        const lista = porArea[area];
+        if (!lista || lista.length === 0) return;
+        const cor = CORES_AREA_REL[area] || CORES_AREA_REL['SEM CLASSIFICAÇÃO'];
+
+        secaoCumpridos += `<div style="margin-bottom:14px">
+          <div style="background:${cor.bg};border:1px solid ${cor.borda};border-radius:5px 5px 0 0;padding:6px 12px;font-size:12px;font-weight:700;color:${cor.titulo}">
+            ${cor.icone} ${area} <span style="font-weight:400;color:#64748b">(${lista.length})</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid ${cor.borda};border-top:none;border-radius:0 0 5px 5px">
+            <thead><tr style="background:${cor.bg}">
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${cor.borda};font-size:10px;color:#64748b">PROCESSO</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${cor.borda};font-size:10px;color:#64748b">TIPO</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${cor.borda};font-size:10px;color:#64748b">VENCIMENTO</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${cor.borda};font-size:10px;color:#64748b">RESPONSÁVEL</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${cor.borda};font-size:10px;color:#64748b">OBSERVAÇÕES</th>
+            </tr></thead>
+            <tbody>${lista.map(p => {
+              const venc = p.data_vencimento ? new Date(p.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+              return `<tr style="border-bottom:1px solid #f1f5f9">
+                <td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#334155">${p.numero_processo}</td>
+                <td style="padding:5px 8px;font-size:11px">${p.tipo_prazo||'—'}</td>
+                <td style="padding:5px 8px;font-size:11px">${venc}</td>
+                <td style="padding:5px 8px;font-size:11px">${p.responsavel||'—'}</td>
+                <td style="padding:5px 8px;font-size:11px;color:#64748b">${p.observacoes?p.observacoes.slice(0,60)+'...':'—'}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>`;
+      });
+
+      secaoCumpridos += '</div>';
     });
+
     secaoCumpridos += '</div>';
   }
 
@@ -2343,7 +2389,7 @@ function gerarRelatorio() {
     </div>
     ${secoesMeses || '<p style="color:#64748b;font-size:13px">Nenhum prazo ativo encontrado.</p>'}
     ${secaoCumpridos}
-    <scr'+'ipt>window.onload = () => window.print();</'+'script>
+    <scr"+"ipt>window.onload=()=>window.print();</scr"+"ipt>
   </body></html>`;
 
   const blob = new Blob([htmlRel], { type: 'text/html' });

@@ -503,15 +503,6 @@
     </div>
 
 
-        <!-- CARGA PROCURADORES -->
-    <div class="carga-card" id="carga-card">
-      <div class="carga-title">
-        <span>📊 Carga por procurador</span>
-        <span style="font-size:11px;color:var(--muted)" id="carga-atualizado"></span>
-      </div>
-      <div id="carga-lista"></div>
-    </div>
-
     <!-- FORMULÁRIO PJe -->
     <div class="pje-form" id="pje-manual-form">
       <div class="pje-form-title">⚖️ Inserir processos do PJe</div>
@@ -995,7 +986,6 @@ function atualizarInterface() {
 
   // Renderizar tabela e carga
   renderizarTabela();
-  atualizarCarga();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2152,63 +2142,155 @@ function gerarRelatorio() {
   const grauLabel = grauAtivo === 2 ? '2º Grau (TJ-MA)' : '1º Grau';
   const prazos = todosPrazos.filter(p => (p.grau || 1) === grauAtivo);
 
-  const cumpridos  = prazos.filter(p => p.status === 'concluido');
-  const vencidos   = prazos.filter(p => p.status === 'vencido' || p._dias < 0);
-  const abertos    = prazos.filter(p => p.status !== 'concluido' && p._dias >= 0);
-  const criticos   = abertos.filter(p => p._dias <= 5);
+  // Duplas procurador → analista
+  const DUPLAS = [
+    { proc: 'Benedito',  anal: 'Rômulo',  area: 'Saúde'      },
+    { proc: 'Jucelino',  anal: 'Eduarda', area: 'Trabalho'   },
+    { proc: 'Ruã Pablo', anal: 'Nádia',   area: 'Judicial'   },
+    { proc: 'Gustavo',   anal: 'Erika',   area: 'Tributário' },
+  ];
 
-  const tabelaHTML = (lista, titulo, cor) => lista.length === 0 ? '' : `
-    <h3 style="color:${cor};margin:20px 0 8px;font-size:14px">${titulo} (${lista.length})</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:#f0f0f0">
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Processo</th>
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Área</th>
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Tipo</th>
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Vencimento</th>
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Responsável</th>
-        <th style="padding:6px;text-align:left;border:1px solid #ddd">Status</th>
-      </tr></thead>
-      <tbody>${lista.map(p => `<tr>
-        <td style="padding:5px;border:1px solid #ddd;font-family:monospace;font-size:11px">${p.numero_processo}</td>
-        <td style="padding:5px;border:1px solid #ddd">${p.area}</td>
-        <td style="padding:5px;border:1px solid #ddd">${p.tipo_prazo}</td>
-        <td style="padding:5px;border:1px solid #ddd">${p.data_vencimento ? new Date(p.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-        <td style="padding:5px;border:1px solid #ddd">${p.responsavel || '—'}</td>
-        <td style="padding:5px;border:1px solid #ddd">${p.status}</td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+  const totais = { total: prazos.length, cumpridos: 0, vencidos: 0, criticos: 0, abertos: 0 };
+  prazos.forEach(p => {
+    if (p.status === 'concluido') totais.cumpridos++;
+    else if (p._dias < 0) totais.vencidos++;
+    else if (p._dias <= 5) totais.criticos++;
+    else totais.abertos++;
+  });
 
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+  const statusLabel = s => ({
+    'pendente': 'Pendente', 'em_andamento': 'Em andamento',
+    'concluido': 'Cumprido', 'vencido': 'Vencido', 'sem_prazo': 'Sem prazo'
+  }[s] || s);
+
+  const corDias = dias => dias < 0 ? '#ef4444' : dias <= 5 ? '#f59e0b' : '#22c55e';
+
+  const linhaTabela = p => {
+    const venc = p.data_vencimento
+      ? new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const dias = p._dias != null ? p._dias : '—';
+    const corD = typeof dias === 'number' ? corDias(dias) : '#64748b';
+    return `<tr style="border-bottom:1px solid #e5e7eb">
+      <td style="padding:6px 8px;font-family:monospace;font-size:11px">${p.numero_processo}</td>
+      <td style="padding:6px 8px;font-size:12px">${p.tipo_prazo || '—'}</td>
+      <td style="padding:6px 8px;font-size:12px">${venc}</td>
+      <td style="padding:6px 8px;font-size:12px;color:${corD};font-weight:600">${typeof dias === 'number' ? (dias < 0 ? dias + 'd' : '+' + dias + 'd') : dias}</td>
+      <td style="padding:6px 8px;font-size:12px">${statusLabel(p.status)}</td>
+      <td style="padding:6px 8px;font-size:11px;color:#64748b">${p.observacoes ? p.observacoes.slice(0,60) + '...' : '—'}</td>
+    </tr>`;
+  };
+
+  const secaoDupla = (dupla) => {
+    const meus = prazos.filter(p =>
+      p.responsavel === dupla.proc || p.responsavel === dupla.anal
+    );
+    if (meus.length === 0) return '';
+
+    const ativos    = meus.filter(p => p.status !== 'concluido');
+    const cumpridos = meus.filter(p => p.status === 'concluido');
+    const vencidos  = ativos.filter(p => p._dias < 0);
+    const criticos  = ativos.filter(p => p._dias >= 0 && p._dias <= 5);
+    const noPrazo   = ativos.filter(p => p._dias > 5);
+
+    const tabelinha = (lista, titulo, cor) => lista.length === 0 ? '' : `
+      <p style="font-size:12px;font-weight:600;color:${cor};margin:12px 0 4px">${titulo} (${lista.length})</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Processo</th>
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Tipo</th>
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Vencimento</th>
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Dias</th>
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Status</th>
+          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Observações</th>
+        </tr></thead>
+        <tbody>${lista.map(linhaTabela).join('')}</tbody>
+      </table>`;
+
+    return `
+    <div style="margin-bottom:28px;page-break-inside:avoid">
+      <div style="background:#1e293b;color:#fff;padding:10px 16px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <span style="font-size:14px;font-weight:700">${dupla.proc}</span>
+          <span style="font-size:12px;color:#94a3b8;margin-left:8px">+ ${dupla.anal}</span>
+          <span style="font-size:11px;color:#64748b;margin-left:12px">${dupla.area}</span>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px">
+          <span style="color:#ef4444">${vencidos.length} vencido(s)</span>
+          <span style="color:#f59e0b">${criticos.length} crítico(s)</span>
+          <span style="color:#22c55e">${cumpridos.length} cumprido(s)</span>
+          <span style="color:#94a3b8">${meus.length} total</span>
+        </div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px">
+        ${tabelinha(vencidos, '🔴 Vencidos', '#ef4444')}
+        ${tabelinha(criticos, '⚠️ Críticos (≤5 dias)', '#f59e0b')}
+        ${tabelinha(noPrazo, '✅ No prazo', '#22c55e')}
+        ${tabelinha(cumpridos, '✔️ Cumpridos', '#64748b')}
+        ${ativos.length === 0 && cumpridos.length === 0 ? '<p style="color:#94a3b8;font-size:12px">Nenhum processo.</p>' : ''}
+      </div>
+    </div>`;
+  };
+
+  // Processos sem responsável ou fora das duplas
+  const respConhecidos = ['Benedito','Rômulo','Jucelino','Eduarda','Ruã Pablo','Nádia','Gustavo','Erika'];
+  const semResp = prazos.filter(p => !p.responsavel || !respConhecidos.includes(p.responsavel));
+
+  const secaoSemResp = semResp.length === 0 ? '' : `
+    <div style="margin-bottom:28px">
+      <div style="background:#475569;color:#fff;padding:10px 16px;border-radius:6px 6px 0 0">
+        <span style="font-size:14px;font-weight:700">Sem responsável atribuído</span>
+        <span style="font-size:11px;color:#cbd5e1;margin-left:12px">${semResp.length} processo(s)</span>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Processo</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Área</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Tipo</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Vencimento</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Status</th>
+          </tr></thead>
+          <tbody>${semResp.map(p => `<tr style="border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 8px;font-family:monospace;font-size:11px">${p.numero_processo}</td>
+            <td style="padding:5px 8px;font-size:12px">${p.area || '—'}</td>
+            <td style="padding:5px 8px;font-size:12px">${p.tipo_prazo || '—'}</td>
+            <td style="padding:5px 8px;font-size:12px">${p.data_vencimento ? new Date(p.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+            <td style="padding:5px 8px;font-size:12px">${statusLabel(p.status)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  const htmlRel = `<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
     <title>Relatório de Prazos — ${mes}</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 30px; color: #1a1a1a; }
-      h1 { font-size: 20px; color: #1a1a1a; margin-bottom: 4px; }
-      .subtitle { font-size: 12px; color: #666; margin-bottom: 20px; }
-      .resumo { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-      .kpi { background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 20px; text-align: center; }
-      .kpi-num { font-size: 28px; font-weight: 700; }
-      .kpi-label { font-size: 11px; color: #666; }
-      @media print { body { padding: 15px; } }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; padding: 30px; color: #1a1a1a; max-width: 1100px; margin: 0 auto; }
+      h1 { font-size: 20px; margin-bottom: 4px; }
+      .sub { font-size: 12px; color: #64748b; margin-bottom: 20px; }
+      .resumo { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+      .kpi { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 100px; }
+      .kpi-num { font-size: 26px; font-weight: 700; }
+      .kpi-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+      @media print { body { padding: 15px; } .kpi { padding: 8px 14px; } }
     </style>
   </head><body>
     <h1>📋 Relatório de Prazos Judiciais — ${grauLabel}</h1>
-    <div class="subtitle">Procuradoria-Geral do Município de Buriticupu — MA · Gerado em ${hoje.toLocaleString('pt-BR')}</div>
+    <div class="sub">Procuradoria-Geral do Município de Buriticupu — MA · ${mes.charAt(0).toUpperCase()+mes.slice(1)} · Gerado em ${hoje.toLocaleString('pt-BR')}</div>
     <div class="resumo">
-      <div class="kpi"><div class="kpi-num" style="color:#3b82f6">${prazos.length}</div><div class="kpi-label">Total</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#22c55e">${cumpridos.length}</div><div class="kpi-label">Cumpridos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#f59e0b">${criticos.length}</div><div class="kpi-label">Críticos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#ef4444">${vencidos.length}</div><div class="kpi-label">Vencidos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#64748b">${abertos.length}</div><div class="kpi-label">Em aberto</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#3b82f6">${totais.total}</div><div class="kpi-label">Total</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#22c55e">${totais.cumpridos}</div><div class="kpi-label">Cumpridos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#f59e0b">${totais.criticos}</div><div class="kpi-label">Críticos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#ef4444">${totais.vencidos}</div><div class="kpi-label">Vencidos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#64748b">${totais.abertos}</div><div class="kpi-label">No prazo</div></div>
     </div>
-    ${tabelaHTML(criticos, '⚠️ Críticos (vencendo em até 5 dias)', '#f59e0b')}
-    ${tabelaHTML(vencidos, '🔴 Vencidos', '#ef4444')}
-    ${tabelaHTML(abertos.filter(p => p._dias > 5), '✅ Em aberto (no prazo)', '#3b82f6')}
-    ${tabelaHTML(cumpridos, '✔️ Cumpridos', '#22c55e')}
-    <scr'+'ipt>window.onload = () => window.print();</scr'+'ipt>
+    ${DUPLAS.map(secaoDupla).join('')}
+    ${secaoSemResp}
+    <scr'+'ipt>window.onload = () => window.print();</'+'script>
   </body></html>`;
 
-  const blob = new Blob([html], { type: 'text/html' });
+  const blob = new Blob([htmlRel], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
   if (!w) alert('Permita pop-ups para gerar o relatório.');

@@ -2126,11 +2126,9 @@ function atualizarCarga() {
 // ══════════════════════════════════════════════════════════════
 function gerarRelatorio() {
   const hoje = new Date();
-  const mes = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const grauLabel = grauAtivo === 2 ? '2º Grau (TJ-MA)' : '1º Grau';
   const prazos = todosPrazos.filter(p => (p.grau || 1) === grauAtivo);
 
-  // Duplas procurador → analista
   const DUPLAS = [
     { proc: 'Benedito',  anal: 'Rômulo',  area: 'Saúde'      },
     { proc: 'Jucelino',  anal: 'Eduarda', area: 'Trabalho'   },
@@ -2138,143 +2136,213 @@ function gerarRelatorio() {
     { proc: 'Gustavo',   anal: 'Erika',   area: 'Tributário' },
   ];
 
-  const totais = { total: prazos.length, cumpridos: 0, vencidos: 0, criticos: 0, abertos: 0 };
-  prazos.forEach(p => {
-    if (p.status === 'concluido') totais.cumpridos++;
-    else if (p._dias < 0) totais.vencidos++;
-    else if (p._dias <= 5) totais.criticos++;
-    else totais.abertos++;
-  });
+  const RESP_CONHECIDOS = ['Benedito','Rômulo','Jucelino','Eduarda','Ruã Pablo','Nádia','Gustavo','Erika'];
 
   const statusLabel = s => ({
     'pendente': 'Pendente', 'em_andamento': 'Em andamento',
     'concluido': 'Cumprido', 'vencido': 'Vencido', 'sem_prazo': 'Sem prazo'
   }[s] || s);
 
-  const corDias = dias => dias < 0 ? '#ef4444' : dias <= 5 ? '#f59e0b' : '#22c55e';
+  const nomeMes = (ano, mes) => {
+    const d = new Date(ano, mes - 1, 1);
+    return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  };
 
-  const linhaTabela = p => {
+  // Agrupar por mês de vencimento
+  const porMes = {};
+  prazos.forEach(p => {
+    if (!p.data_vencimento) return;
+    const [ano, mes] = p.data_vencimento.split('-');
+    const chave = ano + '-' + mes;
+    if (!porMes[chave]) porMes[chave] = [];
+    porMes[chave].push(p);
+  });
+
+  const mesesOrdenados = Object.keys(porMes).sort();
+
+  // Linha da tabela de ativos
+  const linhaAtivo = p => {
     const venc = p.data_vencimento
       ? new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-    const dias = p._dias != null ? p._dias : '—';
-    const corD = typeof dias === 'number' ? corDias(dias) : '#64748b';
-    return `<tr style="border-bottom:1px solid #e5e7eb">
-      <td style="padding:6px 8px;font-family:monospace;font-size:11px">${p.numero_processo}</td>
-      <td style="padding:6px 8px;font-size:12px">${p.tipo_prazo || '—'}</td>
-      <td style="padding:6px 8px;font-size:12px">${venc}</td>
-      <td style="padding:6px 8px;font-size:12px;color:${corD};font-weight:600">${typeof dias === 'number' ? (dias < 0 ? dias + 'd' : '+' + dias + 'd') : dias}</td>
-      <td style="padding:6px 8px;font-size:12px">${statusLabel(p.status)}</td>
-      <td style="padding:6px 8px;font-size:11px;color:#64748b">${p.observacoes ? p.observacoes.slice(0,60) + '...' : '—'}</td>
+    const dias = p._dias != null ? p._dias : null;
+    const corD = dias == null ? '#64748b' : dias < 0 ? '#ef4444' : dias <= 5 ? '#f59e0b' : '#16a34a';
+    const diasTxt = dias == null ? '—' : dias < 0 ? dias + 'd' : '+' + dias + 'd';
+    return `<tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#334155">${p.numero_processo}</td>
+      <td style="padding:5px 8px;font-size:11px">${p.tipo_prazo || '—'}</td>
+      <td style="padding:5px 8px;font-size:11px">${venc}</td>
+      <td style="padding:5px 8px;font-size:11px;font-weight:700;color:${corD}">${diasTxt}</td>
+      <td style="padding:5px 8px;font-size:11px">${statusLabel(p.status)}</td>
     </tr>`;
   };
 
-  const secaoDupla = (dupla) => {
-    const meus = prazos.filter(p =>
-      p.responsavel === dupla.proc || p.responsavel === dupla.anal
-    );
-    if (meus.length === 0) return '';
-
-    const ativos    = meus.filter(p => p.status !== 'concluido');
-    const cumpridos = meus.filter(p => p.status === 'concluido');
-    const vencidos  = ativos.filter(p => p._dias < 0);
-    const criticos  = ativos.filter(p => p._dias >= 0 && p._dias <= 5);
-    const noPrazo   = ativos.filter(p => p._dias > 5);
-
-    const tabelinha = (lista, titulo, cor) => lista.length === 0 ? '' : `
-      <p style="font-size:12px;font-weight:600;color:${cor};margin:12px 0 4px">${titulo} (${lista.length})</p>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
-        <thead><tr style="background:#f8fafc">
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Processo</th>
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Tipo</th>
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Vencimento</th>
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Dias</th>
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Status</th>
-          <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Observações</th>
-        </tr></thead>
-        <tbody>${lista.map(linhaTabela).join('')}</tbody>
-      </table>`;
-
-    return `
-    <div style="margin-bottom:28px;page-break-inside:avoid">
-      <div style="background:#1e293b;color:#fff;padding:10px 16px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <span style="font-size:14px;font-weight:700">${dupla.proc}</span>
-          <span style="font-size:12px;color:#94a3b8;margin-left:8px">+ ${dupla.anal}</span>
-          <span style="font-size:11px;color:#64748b;margin-left:12px">${dupla.area}</span>
-        </div>
-        <div style="display:flex;gap:12px;font-size:11px">
-          <span style="color:#ef4444">${vencidos.length} vencido(s)</span>
-          <span style="color:#f59e0b">${criticos.length} crítico(s)</span>
-          <span style="color:#22c55e">${cumpridos.length} cumprido(s)</span>
-          <span style="color:#94a3b8">${meus.length} total</span>
-        </div>
-      </div>
-      <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px">
-        ${tabelinha(vencidos, '🔴 Vencidos', '#ef4444')}
-        ${tabelinha(criticos, '⚠️ Críticos (≤5 dias)', '#f59e0b')}
-        ${tabelinha(noPrazo, '✅ No prazo', '#22c55e')}
-        ${tabelinha(cumpridos, '✔️ Cumpridos', '#64748b')}
-        ${ativos.length === 0 && cumpridos.length === 0 ? '<p style="color:#94a3b8;font-size:12px">Nenhum processo.</p>' : ''}
-      </div>
-    </div>`;
+  // Linha da tabela de cumpridos
+  const linhaCumprido = p => {
+    const venc = p.data_vencimento
+      ? new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    return `<tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#334155">${p.numero_processo}</td>
+      <td style="padding:5px 8px;font-size:11px">${p.area || '—'}</td>
+      <td style="padding:5px 8px;font-size:11px">${p.tipo_prazo || '—'}</td>
+      <td style="padding:5px 8px;font-size:11px">${venc}</td>
+      <td style="padding:5px 8px;font-size:11px">${p.responsavel || '—'}</td>
+      <td style="padding:5px 8px;font-size:11px;color:#64748b">${p.observacoes ? p.observacoes.slice(0,50) : '—'}</td>
+    </tr>`;
   };
 
-  // Processos sem responsável ou fora das duplas
-  const respConhecidos = ['Benedito','Rômulo','Jucelino','Eduarda','Ruã Pablo','Nádia','Gustavo','Erika'];
-  const semResp = prazos.filter(p => !p.responsavel || !respConhecidos.includes(p.responsavel));
+  const cabecalhoAtivos = `<thead><tr style="background:#f8fafc">
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:10px;color:#64748b">PROCESSO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:10px;color:#64748b">TIPO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:10px;color:#64748b">VENCIMENTO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:10px;color:#64748b">DIAS</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:10px;color:#64748b">STATUS</th>
+  </tr></thead>`;
 
-  const secaoSemResp = semResp.length === 0 ? '' : `
-    <div style="margin-bottom:28px">
-      <div style="background:#475569;color:#fff;padding:10px 16px;border-radius:6px 6px 0 0">
-        <span style="font-size:14px;font-weight:700">Sem responsável atribuído</span>
-        <span style="font-size:11px;color:#cbd5e1;margin-left:12px">${semResp.length} processo(s)</span>
+  const cabecalhoCumpridos = `<thead><tr style="background:#f0fdf4">
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">PROCESSO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">ÁREA</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">TIPO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">VENCIMENTO</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">RESPONSÁVEL</th>
+    <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #bbf7d0;font-size:10px;color:#166534">OBSERVAÇÕES</th>
+  </tr></thead>`;
+
+  // Gerar seções por mês
+  let secoesMeses = '';
+  mesesOrdenados.forEach(chave => {
+    const [ano, mes] = chave.split('-');
+    const prazosMes = porMes[chave].filter(p => p.status !== 'concluido');
+    if (prazosMes.length === 0) return;
+
+    const vencMes = prazosMes.filter(p => p._dias < 0).length;
+    const critMes = prazosMes.filter(p => p._dias >= 0 && p._dias <= 5).length;
+
+    let secoesDuplas = '';
+    DUPLAS.forEach(dupla => {
+      const meus = prazosMes.filter(p =>
+        p.responsavel === dupla.proc || p.responsavel === dupla.anal
+      );
+      if (meus.length === 0) return;
+
+      const venc = meus.filter(p => p._dias < 0);
+      const crit = meus.filter(p => p._dias >= 0 && p._dias <= 5);
+      const ok   = meus.filter(p => p._dias > 5);
+
+      const grupoLinhas = (lista, cor, label) => lista.length === 0 ? '' : `
+        <tr><td colspan="5" style="padding:4px 8px;font-size:10px;font-weight:700;color:${cor};background:#fafafa">${label} (${lista.length})</td></tr>
+        ${lista.map(linhaAtivo).join('')}`;
+
+      secoesDuplas += `
+        <div style="margin-bottom:14px">
+          <div style="background:#334155;color:#fff;padding:7px 12px;border-radius:5px 5px 0 0;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;font-weight:700">${dupla.proc} <span style="color:#94a3b8;font-weight:400">+ ${dupla.anal}</span> <span style="font-size:10px;color:#64748b;margin-left:8px">${dupla.area}</span></span>
+            <span style="font-size:10px">${venc.length > 0 ? '<span style="color:#fca5a5">'+venc.length+' venc.</span> ' : ''}${crit.length > 0 ? '<span style="color:#fde68a">'+crit.length+' crít.</span> ' : ''}<span style="color:#94a3b8">${meus.length} total</span></span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 5px 5px">
+            ${cabecalhoAtivos}
+            <tbody>
+              ${grupoLinhas(venc, '#ef4444', '🔴 Vencidos')}
+              ${grupoLinhas(crit, '#f59e0b', '⚠️ Críticos')}
+              ${grupoLinhas(ok,   '#16a34a', '✅ No prazo')}
+            </tbody>
+          </table>
+        </div>`;
+    });
+
+    // Sem responsável no mês
+    const semResp = prazosMes.filter(p => !p.responsavel || !RESP_CONHECIDOS.includes(p.responsavel));
+    if (semResp.length > 0) {
+      secoesDuplas += `
+        <div style="margin-bottom:14px">
+          <div style="background:#64748b;color:#fff;padding:7px 12px;border-radius:5px 5px 0 0">
+            <span style="font-size:12px;font-weight:700">Sem responsável</span>
+            <span style="font-size:10px;color:#cbd5e1;margin-left:8px">${semResp.length} processo(s)</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e2e8f0;border-top:none">
+            ${cabecalhoAtivos}<tbody>${semResp.map(linhaAtivo).join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    if (!secoesDuplas) return;
+
+    secoesMeses += `
+    <div style="margin-bottom:32px;page-break-inside:avoid">
+      <div style="border-left:4px solid #3b82f6;padding:6px 14px;background:#eff6ff;margin-bottom:12px;border-radius:0 5px 5px 0">
+        <span style="font-size:16px;font-weight:700;color:#1d4ed8;text-transform:capitalize">${nomeMes(ano, mes)}</span>
+        <span style="font-size:11px;color:#64748b;margin-left:12px">${prazosMes.length} prazos ativos</span>
+        ${vencMes > 0 ? '<span style="font-size:11px;color:#ef4444;margin-left:8px">· '+vencMes+' vencido(s)</span>' : ''}
+        ${critMes > 0 ? '<span style="font-size:11px;color:#f59e0b;margin-left:8px">· '+critMes+' crítico(s)</span>' : ''}
       </div>
-      <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="background:#f8fafc">
-            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Processo</th>
-            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Área</th>
-            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Tipo</th>
-            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Vencimento</th>
-            <th style="padding:5px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:11px">Status</th>
-          </tr></thead>
-          <tbody>${semResp.map(p => `<tr style="border-bottom:1px solid #e5e7eb">
-            <td style="padding:5px 8px;font-family:monospace;font-size:11px">${p.numero_processo}</td>
-            <td style="padding:5px 8px;font-size:12px">${p.area || '—'}</td>
-            <td style="padding:5px 8px;font-size:12px">${p.tipo_prazo || '—'}</td>
-            <td style="padding:5px 8px;font-size:12px">${p.data_vencimento ? new Date(p.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-            <td style="padding:5px 8px;font-size:12px">${statusLabel(p.status)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
+      ${secoesDuplas}
     </div>`;
+  });
+
+  // Seção de cumpridos — separada para o RPM
+  const cumpridos = prazos.filter(p => p.status === 'concluido');
+  const porMesCumprido = {};
+  cumpridos.forEach(p => {
+    if (!p.data_vencimento) return;
+    const [ano, mes] = p.data_vencimento.split('-');
+    const chave = ano + '-' + mes;
+    if (!porMesCumprido[chave]) porMesCumprido[chave] = [];
+    porMesCumprido[chave].push(p);
+  });
+
+  let secaoCumpridos = '';
+  if (cumpridos.length > 0) {
+    secaoCumpridos = `
+    <div style="page-break-before:always">
+      <div style="border-left:4px solid #22c55e;padding:6px 14px;background:#f0fdf4;margin-bottom:16px;border-radius:0 5px 5px 0">
+        <span style="font-size:16px;font-weight:700;color:#166534">✔️ Prazos Cumpridos — RPM</span>
+        <span style="font-size:11px;color:#64748b;margin-left:12px">${cumpridos.length} processo(s) cumprido(s)</span>
+      </div>
+      <p style="font-size:11px;color:#64748b;margin-bottom:12px">Esta seção é separada para inclusão no Relatório de Produtividade Mensal (RPM).</p>`;
+
+    Object.keys(porMesCumprido).sort().forEach(chave => {
+      const [ano, mes] = chave.split('-');
+      const lista = porMesCumprido[chave];
+      secaoCumpridos += `
+      <div style="margin-bottom:20px">
+        <p style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px;text-transform:capitalize">${nomeMes(ano, mes)} (${lista.length})</p>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #bbf7d0;border-radius:5px">
+          ${cabecalhoCumpridos}
+          <tbody>${lista.map(linhaCumprido).join('')}</tbody>
+        </table>
+      </div>`;
+    });
+    secaoCumpridos += '</div>';
+  }
+
+  // Totais gerais
+  const totalAtivos = prazos.filter(p => p.status !== 'concluido').length;
+  const totalVenc   = prazos.filter(p => p._dias < 0 && p.status !== 'concluido').length;
+  const totalCrit   = prazos.filter(p => p._dias >= 0 && p._dias <= 5 && p.status !== 'concluido').length;
 
   const htmlRel = `<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
-    <title>Relatório de Prazos — ${mes}</title>
+    <title>Relatório de Prazos</title>
     <style>
-      * { box-sizing: border-box; }
-      body { font-family: Arial, sans-serif; padding: 30px; color: #1a1a1a; max-width: 1100px; margin: 0 auto; }
-      h1 { font-size: 20px; margin-bottom: 4px; }
-      .sub { font-size: 12px; color: #64748b; margin-bottom: 20px; }
-      .resumo { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
-      .kpi { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 100px; }
-      .kpi-num { font-size: 26px; font-weight: 700; }
-      .kpi-label { font-size: 11px; color: #64748b; margin-top: 2px; }
-      @media print { body { padding: 15px; } .kpi { padding: 8px 14px; } }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; padding: 28px; color: #1a1a1a; max-width: 1050px; margin: 0 auto; }
+      .resumo { display: flex; gap: 10px; margin: 16px 0 28px; flex-wrap: wrap; }
+      .kpi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 10px 18px; text-align: center; }
+      .kpi-num { font-size: 24px; font-weight: 700; }
+      .kpi-label { font-size: 10px; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
+      @media print { body { padding: 15px; } @page { margin: 1.5cm; } }
     </style>
   </head><body>
-    <h1>📋 Relatório de Prazos Judiciais — ${grauLabel}</h1>
-    <div class="sub">Procuradoria-Geral do Município de Buriticupu — MA · ${mes.charAt(0).toUpperCase()+mes.slice(1)} · Gerado em ${hoje.toLocaleString('pt-BR')}</div>
+    <h1 style="font-size:18px;font-weight:700">📋 Relatório de Prazos Judiciais — ${grauLabel}</h1>
+    <p style="font-size:11px;color:#64748b;margin-top:4px">Procuradoria-Geral do Município de Buriticupu — MA · Gerado em ${hoje.toLocaleString('pt-BR')}</p>
     <div class="resumo">
-      <div class="kpi"><div class="kpi-num" style="color:#3b82f6">${totais.total}</div><div class="kpi-label">Total</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#22c55e">${totais.cumpridos}</div><div class="kpi-label">Cumpridos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#f59e0b">${totais.criticos}</div><div class="kpi-label">Críticos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#ef4444">${totais.vencidos}</div><div class="kpi-label">Vencidos</div></div>
-      <div class="kpi"><div class="kpi-num" style="color:#64748b">${totais.abertos}</div><div class="kpi-label">No prazo</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#3b82f6">${prazos.length}</div><div class="kpi-label">Total</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#64748b">${totalAtivos}</div><div class="kpi-label">Ativos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#f59e0b">${totalCrit}</div><div class="kpi-label">Críticos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#ef4444">${totalVenc}</div><div class="kpi-label">Vencidos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#22c55e">${cumpridos.length}</div><div class="kpi-label">Cumpridos</div></div>
     </div>
-    ${DUPLAS.map(secaoDupla).join('')}
-    ${secaoSemResp}
+    ${secoesMeses || '<p style="color:#64748b;font-size:13px">Nenhum prazo ativo encontrado.</p>'}
+    ${secaoCumpridos}
     <scr'+'ipt>window.onload = () => window.print();</'+'script>
   </body></html>`;
 

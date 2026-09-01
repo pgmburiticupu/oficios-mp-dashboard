@@ -323,6 +323,49 @@
   .grau-badge.b1 { background: rgba(59,130,246,.2); color: #60a5fa; }
   .grau-badge.b2 { background: rgba(139,92,246,.2); color: #a78bfa; }
   .grau-tab-wrapper { border-bottom: 1px solid var(--border-hi); margin-bottom: 0; }
+
+  /* BUSCA */
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 14px; flex: 1; max-width: 320px;
+  }
+  .search-box input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 12px; width: 100%;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+
+  /* CARGA PROCURADORES */
+  .carga-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+  }
+  .carga-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .carga-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .carga-nome { font-size: 12px; width: 90px; flex-shrink: 0; }
+  .carga-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
+  .carga-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+  .carga-nums { font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .carga-nums span { font-weight: 600; color: var(--text); }
+
+  /* PROTOCOLO */
+  .protocolo-box {
+    background: rgba(34,197,94,.06); border: 1px solid rgba(34,197,94,.15);
+    border-radius: 8px; padding: 12px; display: none; flex-direction: column; gap: 8px;
+  }
+  .protocolo-box.open { display: flex; }
+  .protocolo-label { font-size: 11px; font-weight: 600; color: var(--green); }
+
+  /* RELATÓRIO */
+  .btn-relatorio {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(168,85,247,.12); border: 1px solid rgba(168,85,247,.25);
+    color: #c084fc; border-radius: 8px; padding: 8px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn-relatorio:hover { background: rgba(168,85,247,.2); }
+
 </style>
 </head>
 <body>
@@ -460,7 +503,16 @@
     </div>
 
 
-        <!-- FORMULÁRIO PJe -->
+        <!-- CARGA PROCURADORES -->
+    <div class="carga-card" id="carga-card">
+      <div class="carga-title">
+        <span>📊 Carga por procurador</span>
+        <span style="font-size:11px;color:var(--muted)" id="carga-atualizado"></span>
+      </div>
+      <div id="carga-lista"></div>
+    </div>
+
+    <!-- FORMULÁRIO PJe -->
     <div class="pje-form" id="pje-manual-form">
       <div class="pje-form-title">⚖️ Inserir processos do PJe</div>
       <div id="pje-lista-processos"></div>
@@ -510,11 +562,19 @@
               <span class="grau-badge b2" id="badge-2grau">—</span>
             </div>
           </div>
-          <div class="filters" style="margin-bottom:1px">
-            <button class="filter-btn active" onclick="filtrarStatus('',this)">Todos</button>
-            <button class="filter-btn" onclick="filtrarStatus('vencido',this)">Vencidos</button>
-            <button class="filter-btn" onclick="filtrarStatus('critico',this)">Críticos</button>
-            <button class="filter-btn" onclick="filtrarStatus('pendente',this)">Pendentes</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1px">
+            <div class="search-box">
+              <span style="color:var(--muted);font-size:13px">🔍</span>
+              <input type="text" id="campo-busca" placeholder="Buscar processo, área, responsável..."
+                oninput="filtrarBusca(this.value)">
+            </div>
+            <div class="filters">
+              <button class="filter-btn active" onclick="filtrarStatus('',this)">Todos</button>
+              <button class="filter-btn" onclick="filtrarStatus('vencido',this)">Vencidos</button>
+              <button class="filter-btn" onclick="filtrarStatus('critico',this)">Críticos</button>
+              <button class="filter-btn" onclick="filtrarStatus('pendente',this)">Pendentes</button>
+            </div>
+            <button class="btn-relatorio" onclick="gerarRelatorio()">📊 Relatório mensal</button>
           </div>
         </div>
       </div>
@@ -664,6 +724,22 @@
     <div class="painel-section">
       <div class="painel-label">Observações do sistema</div>
       <div class="painel-obs" id="p-obs">—</div>
+    </div>
+
+    <div class="protocolo-box" id="protocolo-box">
+      <div class="protocolo-label">✅ Registro de cumprimento</div>
+      <div class="painel-section">
+        <div class="painel-label">Número do protocolo / petição</div>
+        <input type="text" class="painel-select" id="p-protocolo" placeholder="Ex: PET-2026-00123">
+      </div>
+      <div class="painel-section">
+        <div class="painel-label">Data de cumprimento</div>
+        <input type="date" class="painel-select" id="p-data-cumprimento">
+      </div>
+      <div class="painel-section">
+        <div class="painel-label">Quem assinou / protocolou</div>
+        <input type="text" class="painel-select" id="p-quem-assinou" placeholder="Nome do procurador/analista">
+      </div>
     </div>
 
     <div class="painel-section">
@@ -910,8 +986,9 @@ function atualizarInterface() {
      <div class="djma-stat">Próxima leitura: <strong>amanhã às 08h</strong></div>`;
   document.getElementById('djma-ultima-sync').textContent = `Atualizado: ${new Date().toLocaleTimeString('pt-BR')}`;
 
-  // Renderizar tabela
+  // Renderizar tabela e carga
   renderizarTabela();
+  atualizarCarga();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -926,6 +1003,16 @@ function renderizarTabela() {
   // Filtrar pelo grau da aba ativa
   prazos = prazos.filter(p => (p.grau || 1) === grauAtivo);
   if (filtroAtual.resp)    prazos = prazos.filter(p => p.responsavel === filtroAtual.resp);
+  // Filtro de busca
+  if (termoBusca) {
+    prazos = prazos.filter(p =>
+      (p.numero_processo || '').toLowerCase().includes(termoBusca) ||
+      (p.area || '').toLowerCase().includes(termoBusca) ||
+      (p.tipo_prazo || '').toLowerCase().includes(termoBusca) ||
+      (p.responsavel || '').toLowerCase().includes(termoBusca) ||
+      (p.observacoes || '').toLowerCase().includes(termoBusca)
+    );
+  }
   if (filtroAtual.status === 'vencido')   prazos = prazos.filter(p => p._dias < 0);
   if (filtroAtual.status === 'critico')   prazos = prazos.filter(p => p._dias >= 0 && p._dias <= 5);
   if (filtroAtual.status === 'pendente')  prazos = prazos.filter(p => p._dias > 5);
@@ -1138,6 +1225,9 @@ function selecionarStatus(status) {
     const btn = document.getElementById('btn-' + s);
     if (btn) btn.style.opacity = s === status ? '1' : '.4';
   });
+  // Mostrar campo de protocolo apenas quando cumprido
+  const proto = document.getElementById('protocolo-box');
+  if (proto) proto.classList.toggle('open', status === 'concluido');
 }
 
 function abrirPainel(id) {
@@ -1151,6 +1241,15 @@ function abrirPainel(id) {
   document.getElementById('p-origem').textContent = p.origem || '—';
   document.getElementById('p-obs').textContent    = p.observacoes || 'Sem observações do sistema.';
   document.getElementById('p-anotacao').value     = '';
+  const prot = document.getElementById('p-protocolo');
+  if (prot) prot.value = '';
+  const dc = document.getElementById('p-data-cumprimento');
+  if (dc) dc.value = '';
+  const qa = document.getElementById('p-quem-assinou');
+  if (qa) qa.value = '';
+  // Mostrar protocolo se já estiver cumprido
+  const protoBox = document.getElementById('protocolo-box');
+  if (protoBox) protoBox.classList.toggle('open', p.status === 'concluido');
 
   // Título do painel
   document.getElementById('p-titulo').textContent = p.assunto || p.tipo_prazo || 'Detalhes do prazo';
@@ -1197,6 +1296,9 @@ async function salvarPainel() {
 
   const responsavel    = document.getElementById('p-responsavel').value || null;
   const anotacao       = document.getElementById('p-anotacao').value.trim();
+  const protocolo      = document.getElementById('p-protocolo')?.value.trim() || null;
+  const dataCumprimento= document.getElementById('p-data-cumprimento')?.value || null;
+  const quemAssinou    = document.getElementById('p-quem-assinou')?.value.trim() || null;
   const area           = document.getElementById('p-area').value;
   const tipo_prazo     = document.getElementById('p-tipo').value;
   const grau           = parseInt(document.getElementById('p-grau')?.value || '1');
@@ -1209,11 +1311,14 @@ async function salvarPainel() {
   // Montar histórico
   const p = todosPrazos.find(x => x.id === painelPrazoId);
   const hist = p?.historico ? JSON.parse(p.historico) : [];
-  if (anotacao || painelStatus !== p?.status || area !== p?.area || tipo_prazo !== p?.tipo_prazo) {
+  if (anotacao || painelStatus !== p?.status || area !== p?.area || tipo_prazo !== p?.tipo_prazo || protocolo) {
     hist.push({
-      data:     new Date().toLocaleString('pt-BR'),
-      status:   painelStatus,
-      anotacao: anotacao || null,
+      data:          new Date().toLocaleString('pt-BR'),
+      status:        painelStatus,
+      anotacao:      anotacao || null,
+      protocolo:     protocolo || null,
+      dataCumprimento: dataCumprimento || null,
+      quemAssinou:   quemAssinou || null,
     });
   }
 
@@ -1237,6 +1342,8 @@ async function salvarPainel() {
           area,
           tipo_prazo,
           grau,
+          protocolo:     protocolo || undefined,
+          data_cumprimento: dataCumprimento || undefined,
           data_publicacao: data_publicacao || undefined,
           data_vencimento: data_vencimento || undefined,
           dias_restantes,
@@ -1916,6 +2023,141 @@ async function processarPDF(input) {
   }
 
   input.value = '';
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// BUSCA
+// ══════════════════════════════════════════════════════════════
+let termoBusca = '';
+
+function filtrarBusca(termo) {
+  termoBusca = termo.toLowerCase().trim();
+  renderizarTabela();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CARGA POR PROCURADOR
+// ══════════════════════════════════════════════════════════════
+const CORES_PROC = {
+  'Benedito':  '#22577a', 'Jucelino':  '#1e3a5f',
+  'Ruã Pablo': '#5b21b6', 'Gustavo':   '#7c2d12',
+  'Eduarda':   '#1e4060', 'Nádia':     '#4c1d8f',
+  'Rômulo':    '#1a4a6b', 'Erika':     '#7a2010',
+};
+
+function atualizarCarga() {
+  const lista = document.getElementById('carga-lista');
+  if (!lista) return;
+
+  const procuradores = ['Benedito','Jucelino','Ruã Pablo','Gustavo','Eduarda','Nádia','Rômulo','Erika'];
+  const prazosGrauAtual = todosPrazos.filter(p => (p.grau || 1) === grauAtivo && p.status !== 'concluido');
+
+  const contagens = {};
+  procuradores.forEach(nome => {
+    const meus = prazosGrauAtual.filter(p => p.responsavel === nome);
+    contagens[nome] = {
+      total:    meus.length,
+      vencidos: meus.filter(p => p._dias < 0).length,
+      criticos: meus.filter(p => p._dias >= 0 && p._dias <= 5).length,
+    };
+  });
+
+  const max = Math.max(...Object.values(contagens).map(c => c.total), 1);
+
+  lista.innerHTML = procuradores
+    .filter(nome => contagens[nome].total > 0)
+    .sort((a,b) => contagens[b].total - contagens[a].total)
+    .map(nome => {
+      const c = contagens[nome];
+      const pct = Math.round((c.total / max) * 100);
+      const cor = CORES_PROC[nome] || '#334155';
+      return `<div class="carga-row">
+        <div class="carga-nome">${nome}</div>
+        <div class="carga-bar-wrap">
+          <div class="carga-bar-fill" style="width:${pct}%;background:${cor}"></div>
+        </div>
+        <div class="carga-nums">
+          <span>${c.total}</span>
+          ${c.vencidos ? `<span style="color:var(--red)"> · ${c.vencidos}v</span>` : ''}
+          ${c.criticos ? `<span style="color:var(--yellow)"> · ${c.criticos}⚠</span>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div style="font-size:11px;color:var(--muted)">Nenhum prazo atribuído.</div>';
+
+  const el = document.getElementById('carga-atualizado');
+  if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ══════════════════════════════════════════════════════════════
+// RELATÓRIO MENSAL
+// ══════════════════════════════════════════════════════════════
+function gerarRelatorio() {
+  const hoje = new Date();
+  const mes = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const grauLabel = grauAtivo === 2 ? '2º Grau (TJ-MA)' : '1º Grau';
+  const prazos = todosPrazos.filter(p => (p.grau || 1) === grauAtivo);
+
+  const cumpridos  = prazos.filter(p => p.status === 'concluido');
+  const vencidos   = prazos.filter(p => p.status === 'vencido' || p._dias < 0);
+  const abertos    = prazos.filter(p => p.status !== 'concluido' && p._dias >= 0);
+  const criticos   = abertos.filter(p => p._dias <= 5);
+
+  const tabelaHTML = (lista, titulo, cor) => lista.length === 0 ? '' : `
+    <h3 style="color:${cor};margin:20px 0 8px;font-size:14px">${titulo} (${lista.length})</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#f0f0f0">
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Processo</th>
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Área</th>
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Tipo</th>
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Vencimento</th>
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Responsável</th>
+        <th style="padding:6px;text-align:left;border:1px solid #ddd">Status</th>
+      </tr></thead>
+      <tbody>${lista.map(p => `<tr>
+        <td style="padding:5px;border:1px solid #ddd;font-family:monospace;font-size:11px">${p.numero_processo}</td>
+        <td style="padding:5px;border:1px solid #ddd">${p.area}</td>
+        <td style="padding:5px;border:1px solid #ddd">${p.tipo_prazo}</td>
+        <td style="padding:5px;border:1px solid #ddd">${p.data_vencimento ? new Date(p.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+        <td style="padding:5px;border:1px solid #ddd">${p.responsavel || '—'}</td>
+        <td style="padding:5px;border:1px solid #ddd">${p.status}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Relatório de Prazos — ${mes}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 30px; color: #1a1a1a; }
+      h1 { font-size: 20px; color: #1a1a1a; margin-bottom: 4px; }
+      .subtitle { font-size: 12px; color: #666; margin-bottom: 20px; }
+      .resumo { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+      .kpi { background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 20px; text-align: center; }
+      .kpi-num { font-size: 28px; font-weight: 700; }
+      .kpi-label { font-size: 11px; color: #666; }
+      @media print { body { padding: 15px; } }
+    </style>
+  </head><body>
+    <h1>📋 Relatório de Prazos Judiciais — ${grauLabel}</h1>
+    <div class="subtitle">Procuradoria-Geral do Município de Buriticupu — MA · Gerado em ${hoje.toLocaleString('pt-BR')}</div>
+    <div class="resumo">
+      <div class="kpi"><div class="kpi-num" style="color:#3b82f6">${prazos.length}</div><div class="kpi-label">Total</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#22c55e">${cumpridos.length}</div><div class="kpi-label">Cumpridos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#f59e0b">${criticos.length}</div><div class="kpi-label">Críticos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#ef4444">${vencidos.length}</div><div class="kpi-label">Vencidos</div></div>
+      <div class="kpi"><div class="kpi-num" style="color:#64748b">${abertos.length}</div><div class="kpi-label">Em aberto</div></div>
+    </div>
+    ${tabelaHTML(criticos, '⚠️ Críticos (vencendo em até 5 dias)', '#f59e0b')}
+    ${tabelaHTML(vencidos, '🔴 Vencidos', '#ef4444')}
+    ${tabelaHTML(abertos.filter(p => p._dias > 5), '✅ Em aberto (no prazo)', '#3b82f6')}
+    ${tabelaHTML(cumpridos, '✔️ Cumpridos', '#22c55e')}
+    <script>window.onload = () => window.print();</script>
+  </body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) alert('Permita pop-ups para gerar o relatório.');
 }
 
 // ══════════════════════════════════════════════════════════════

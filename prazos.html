@@ -1821,9 +1821,6 @@ async function processarPJeImagem(input) {
 }
 
 async function processarPJeImagemFile(file) {
-  const file = input.files[0];
-  if (!file) return;
-
   document.getElementById('pje-log').innerHTML = '';
   document.getElementById('pje-log').style.display = 'block';
   log_pje('📸 Lendo print: ' + file.name);

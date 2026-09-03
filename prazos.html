@@ -1757,58 +1757,64 @@ const PJE_WORKER_URL = "https://pgm-pje-reader.pgmburiticupu.workers.dev";
 // COLAR IMAGEM COM CTRL+V
 // ══════════════════════════════════════════════════════════════
 function inicializarColarImagem() {
-  const pasteArea = document.getElementById('paste-area');
-  if (!pasteArea) return;
-
-  // Ctrl+V global (em qualquer lugar da página)
+  // Ctrl+V global — busca pasteArea no momento do evento
   document.addEventListener('paste', async (e) => {
+    // Ignorar se o foco está em campo de texto
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
     const items = e.clipboardData?.items;
     if (!items) return;
 
-    for (const item of items) {
+    for (const item of Array.from(items)) {
       if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (!file) continue;
+        e.preventDefault();
+        const imgFile = item.getAsFile();
+        if (!imgFile) continue;
 
-        // Feedback visual
-        pasteArea.textContent = '✅ Imagem colada! Processando...';
-        pasteArea.classList.add('has-image');
+        const pasteArea = document.getElementById('paste-area');
+        if (pasteArea) {
+          pasteArea.textContent = '✅ Processando...';
+          pasteArea.classList.add('has-image');
+        }
 
-        // Processar como se fosse upload
-        await processarPJeImagemFile(file);
+        await processarPJeImagemFile(imgFile);
 
         setTimeout(() => {
-          pasteArea.textContent = '📋 Ctrl+V para colar outro print';
-          pasteArea.classList.remove('has-image');
+          const pa = document.getElementById('paste-area');
+          if (pa) {
+            pa.textContent = '📋 Ctrl+V para colar outro print';
+            pa.classList.remove('has-image');
+          }
         }, 3000);
         break;
       }
     }
   });
 
-  // Drag & drop também
-  pasteArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    pasteArea.classList.add('drag-over');
+  // Drag & drop
+  document.addEventListener('dragover', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
   });
 
-  pasteArea.addEventListener('dragleave', () => {
-    pasteArea.classList.remove('drag-over');
-  });
-
-  pasteArea.addEventListener('drop', async (e) => {
+  document.addEventListener('drop', async (e) => {
+    const imgFile = Array.from(e.dataTransfer?.files || []).find(f => f.type.startsWith('image/'));
+    if (!imgFile) return;
     e.preventDefault();
-    pasteArea.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+
+    const pasteArea = document.getElementById('paste-area');
+    if (pasteArea) {
       pasteArea.textContent = '✅ Imagem recebida! Processando...';
       pasteArea.classList.add('has-image');
-      await processarPJeImagemFile(file);
-      setTimeout(() => {
-        pasteArea.textContent = '📋 Ctrl+V para colar outro print';
-        pasteArea.classList.remove('has-image');
-      }, 3000);
     }
+    await processarPJeImagemFile(imgFile);
+    setTimeout(() => {
+      const pa = document.getElementById('paste-area');
+      if (pa) {
+        pa.textContent = '📋 Ctrl+V para colar outro print';
+        pa.classList.remove('has-image');
+      }
+    }, 3000);
   });
 }
 

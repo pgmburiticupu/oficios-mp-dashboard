@@ -466,14 +466,10 @@ function renderOf(f,s){
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
 
-  // Paleta de cores para grupos SIMP
+  // Paleta de cores para grupos SIMP - alternando azul e cinza
   var paleta=[
-    {hdr:'#e0f2fe',brd:'#38bdf8',txt:'#0369a1',row0:'#f0f9ff',row1:'#e8f5fd'},
-    {hdr:'#d1fae5',brd:'#34d399',txt:'#065f46',row0:'#f0fdf4',row1:'#e5f9ef'},
-    {hdr:'#fef3c7',brd:'#fbbf24',txt:'#92400e',row0:'#fffbeb',row1:'#fef9e0'},
-    {hdr:'#ede9fe',brd:'#a78bfa',txt:'#5b21b6',row0:'#f5f3ff',row1:'#ede8fd'},
-    {hdr:'#fce7f3',brd:'#f472b6',txt:'#9d174d',row0:'#fdf2f8',row1:'#fce4f1'},
-    {hdr:'#ffedd5',brd:'#fb923c',txt:'#9a3412',row0:'#fff7ed',row1:'#fdeee0'},
+    {hdr:'#dbeafe',brd:'#3b82f6',txt:'#1d4ed8',row0:'#eff6ff',row1:'#e5f0ff'},
+    {hdr:'#f3f4f6',brd:'#9ca3af',txt:'#374151',row0:'#fafafa',row1:'#f1f2f4'},
   ];
 
   // Agrupar por SIMP

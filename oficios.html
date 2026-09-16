@@ -173,11 +173,9 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 <div id="tab-oficios">
 <div class="container">
   <div id="error-box-1" class="error-box"></div>
-  <div class="cards">
-    <div class="card total"><div class="label">Procedimentos (SIMP)</div><div class="value" id="c-total">-</div></div>
-    <div class="card atrasado"><div class="label">Em atraso</div><div class="value" id="c-atraso">-</div></div>
-    <div class="card critico"><div class="label">Critico (&gt;30d)</div><div class="value" id="c-critico">-</div></div>
-    <div class="card ok"><div class="label">A vencer</div><div class="value" id="c-ok">-</div></div>
+  <div class="cards" style="grid-template-columns:repeat(2,1fr)">
+    <div class="card total"><div class="label">Total de Ofícios</div><div class="value" id="c-total">-</div></div>
+    <div class="card livre"><div class="label">Total de SIMPs</div><div class="value" id="c-simp">-</div></div>
   </div>
   <div class="controls">
     <button class="filter-btn active" onclick="filterOf('all',this)">Todos</button>
@@ -442,7 +440,9 @@ function gbOf(d){if(d===null)return'<span class="badge badge-avencer">Sem prazo<
 function gdOf(d){if(d===null)return'-';var c=d>0?(d>30?'dias-red':'dias-amber'):'dias-blue';return'<span class="dias-num '+c+'">'+(d>0?'+'+d:d)+'</span>';}
 function rcOf(){
   var simpsUnicos=new Set(ofRows.map(function(r){return r.s||'(sem SIMP)';}));
-  document.getElementById('c-total').textContent=simpsUnicos.size;document.getElementById('c-atraso').textContent=ofRows.filter(function(r){return r.d>0;}).length;document.getElementById('c-critico').textContent=ofRows.filter(function(r){return r.d>30;}).length;document.getElementById('c-ok').textContent=ofRows.filter(function(r){return r.d!==null&&r.d<=0;}).length;}
+  document.getElementById('c-total').textContent=ofRows.length;
+  document.getElementById('c-simp').textContent=simpsUnicos.size;
+}
 function filterOf(f,btn){document.querySelectorAll('#tab-oficios .filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');afOf=f;renderOf(f,document.getElementById('search-of').value);}
 function renderOf(f,s){
   var q=s.toLowerCase();

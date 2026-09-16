@@ -174,7 +174,7 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 <div class="container">
   <div id="error-box-1" class="error-box"></div>
   <div class="cards">
-    <div class="card total"><div class="label">Total pendentes</div><div class="value" id="c-total">-</div></div>
+    <div class="card total"><div class="label">Procedimentos (SIMP)</div><div class="value" id="c-total">-</div></div>
     <div class="card atrasado"><div class="label">Em atraso</div><div class="value" id="c-atraso">-</div></div>
     <div class="card critico"><div class="label">Critico (&gt;30d)</div><div class="value" id="c-critico">-</div></div>
     <div class="card ok"><div class="label">A vencer</div><div class="value" id="c-ok">-</div></div>
@@ -440,7 +440,9 @@ async function loadOf(){
 function gcOf(d){if(d===null)return'sp';if(d>30)return'critico';if(d>=15)return'alto';if(d>=1)return'atraso';return'avencer';}
 function gbOf(d){if(d===null)return'<span class="badge badge-avencer">Sem prazo</span>';if(d>30)return'<span class="badge badge-critico">Critico</span>';if(d>=15)return'<span class="badge badge-alto">Alto</span>';if(d>=1)return'<span class="badge badge-atraso">Em atraso</span>';if(d===0)return'<span class="badge badge-hoje">Vence hoje</span>';return'<span class="badge badge-avencer">A vencer</span>';}
 function gdOf(d){if(d===null)return'-';var c=d>0?(d>30?'dias-red':'dias-amber'):'dias-blue';return'<span class="dias-num '+c+'">'+(d>0?'+'+d:d)+'</span>';}
-function rcOf(){document.getElementById('c-total').textContent=ofRows.length;document.getElementById('c-atraso').textContent=ofRows.filter(function(r){return r.d>0;}).length;document.getElementById('c-critico').textContent=ofRows.filter(function(r){return r.d>30;}).length;document.getElementById('c-ok').textContent=ofRows.filter(function(r){return r.d!==null&&r.d<=0;}).length;}
+function rcOf(){
+  var simpsUnicos=new Set(ofRows.map(function(r){return r.s||'(sem SIMP)';}));
+  document.getElementById('c-total').textContent=simpsUnicos.size;document.getElementById('c-atraso').textContent=ofRows.filter(function(r){return r.d>0;}).length;document.getElementById('c-critico').textContent=ofRows.filter(function(r){return r.d>30;}).length;document.getElementById('c-ok').textContent=ofRows.filter(function(r){return r.d!==null&&r.d<=0;}).length;}
 function filterOf(f,btn){document.querySelectorAll('#tab-oficios .filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');afOf=f;renderOf(f,document.getElementById('search-of').value);}
 function renderOf(f,s){
   var q=s.toLowerCase();
@@ -464,23 +466,37 @@ function renderOf(f,s){
   if(!fl.length){tb.innerHTML='';document.getElementById('table-of').style.display='none';document.getElementById('empty-of').style.display='block';return;}
   document.getElementById('table-of').style.display='table';document.getElementById('empty-of').style.display='none';
 
+  // Paleta de cores para grupos SIMP
+  var paleta=[
+    {hdr:'#e0f2fe',brd:'#38bdf8',txt:'#0369a1',row0:'#f0f9ff',row1:'#e8f5fd'},
+    {hdr:'#d1fae5',brd:'#34d399',txt:'#065f46',row0:'#f0fdf4',row1:'#e5f9ef'},
+    {hdr:'#fef3c7',brd:'#fbbf24',txt:'#92400e',row0:'#fffbeb',row1:'#fef9e0'},
+    {hdr:'#ede9fe',brd:'#a78bfa',txt:'#5b21b6',row0:'#f5f3ff',row1:'#ede8fd'},
+    {hdr:'#fce7f3',brd:'#f472b6',txt:'#9d174d',row0:'#fdf2f8',row1:'#fce4f1'},
+    {hdr:'#ffedd5',brd:'#fb923c',txt:'#9a3412',row0:'#fff7ed',row1:'#fdeee0'},
+  ];
+
   // Agrupar por SIMP
   var html='';
   var simpAtual='';
+  var corIdx=-1;
+  var corAtual=null;
   fl.forEach(function(r){
     var simp=r.s||'(sem SIMP)';
     var isRef=(simp!==simpAtual); // primeiro do grupo = referencia
     if(isRef){
       simpAtual=simp;
+      corIdx=(corIdx+1)%paleta.length;
+      corAtual=paleta[corIdx];
       var qtd=contSIMP[simp];
-      var label='&#128194; SIMP: '+simp+' <span style="font-weight:400;color:#6366f1;margin-left:8px">&#8226; '+qtd+(qtd===1?' ofício':' ofícios')+'</span>';
-      html+='<tr style="background:#f0f4ff;border-top:2px solid #c7d2fe"><td colspan="7" style="padding:6px 12px;font-size:11px;font-weight:600;color:#4338ca;letter-spacing:.03em">'+label+'</td></tr>';
+      var label='&#128194; SIMP: '+simp+' <span style="font-weight:400;margin-left:8px;opacity:.8">&#8226; '+qtd+(qtd===1?' ofício':' ofícios')+'</span>';
+      html+='<tr style="background:'+corAtual.hdr+';border-top:2px solid '+corAtual.brd+'"><td colspan="7" style="padding:7px 14px;font-size:11px;font-weight:700;color:'+corAtual.txt+';letter-spacing:.03em">'+label+'</td></tr>';
     }
-    var indent=isRef?'':'padding-left:24px;';
-    var rowStyle=isRef?'background:#fafbff':'background:#fff';
-    html+='<tr id="row-'+r.id+'" style="'+rowStyle+'">';
-    html+='<td style="'+indent+'"><a href="'+r.u+'" target="_blank" style="color:'+(isRef?'#1e3a8a':'#374151')+';text-decoration:none;font-weight:'+(isRef?'600':'400')+'">'+r.t+'</a>';
-    if(isRef)html+=' <span style="font-size:10px;background:#c7d2fe;color:#3730a3;border-radius:8px;padding:1px 6px;margin-left:4px">ref</span>';
+    var indent=isRef?'':'padding-left:28px;border-left:3px solid '+corAtual.brd+';';
+    var rowBg=isRef?corAtual.row0:corAtual.row1;
+    html+='<tr id="row-'+r.id+'" style="background:'+rowBg+'">';
+    html+='<td style="'+indent+'"><a href="'+r.u+'" target="_blank" style="color:'+(isRef?corAtual.txt:'#374151')+';text-decoration:none;font-weight:'+(isRef?'600':'400')+'">'+r.t+'</a>';
+    if(isRef)html+=' <span style="font-size:10px;background:'+corAtual.brd+';color:#fff;border-radius:8px;padding:1px 7px;margin-left:4px">ref</span>';
     html+='</td>';
     html+='<td style="white-space:nowrap;color:#6b7280">'+(r.p?new Date(r.p+'T00:00:00').toLocaleDateString('pt-BR'):'-')+'</td>';
     html+='<td class="resp">'+(r.r||'-')+'</td>';

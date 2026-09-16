@@ -446,9 +446,15 @@ function renderOf(f,s){
   var q=s.toLowerCase();
   var fl=ofRows.filter(function(r){return(f==='all'||gcOf(r.d)===f)&&(!q||r.t.toLowerCase().includes(q)||(r.r||'').toLowerCase().includes(q)||(r.s||'').toLowerCase().includes(q));});
 
-  // Ordenar por SIMP, depois por data de vencimento dentro do grupo
+  // Contar ofícios por SIMP
+  var contSIMP={};
+  fl.forEach(function(r){var s=r.s||'(sem SIMP)';contSIMP[s]=(contSIMP[s]||0)+1;});
+
+  // Ordenar grupos por quantidade (maior primeiro), desempate alfanumérico
   fl.sort(function(a,b){
-    var sa=a.s||'',sb=b.s||'';
+    var sa=a.s||'(sem SIMP)',sb=b.s||'(sem SIMP)';
+    var ca=contSIMP[sa],cb=contSIMP[sb];
+    if(ca!==cb)return cb-ca; // mais ofícios primeiro
     if(sa!==sb)return sa.localeCompare(sb);
     var da=a.p||'9999',db=b.p||'9999';
     return da.localeCompare(db);
@@ -461,14 +467,14 @@ function renderOf(f,s){
   // Agrupar por SIMP
   var html='';
   var simpAtual='';
-  var indice=0; // posicao global para referencia (primeiro do grupo = mais antigo na lista)
   fl.forEach(function(r){
     var simp=r.s||'(sem SIMP)';
     var isRef=(simp!==simpAtual); // primeiro do grupo = referencia
     if(isRef){
       simpAtual=simp;
-      // Linha de cabecalho do grupo SIMP
-      html+='<tr style="background:#f0f4ff;border-top:2px solid #c7d2fe"><td colspan="7" style="padding:6px 12px;font-size:11px;font-weight:600;color:#4338ca;letter-spacing:.03em">&#128194; SIMP: '+simp+'</td></tr>';
+      var qtd=contSIMP[simp];
+      var label='&#128194; SIMP: '+simp+' <span style="font-weight:400;color:#6366f1;margin-left:8px">&#8226; '+qtd+(qtd===1?' ofício':' ofícios')+'</span>';
+      html+='<tr style="background:#f0f4ff;border-top:2px solid #c7d2fe"><td colspan="7" style="padding:6px 12px;font-size:11px;font-weight:600;color:#4338ca;letter-spacing:.03em">'+label+'</td></tr>';
     }
     var indent=isRef?'':'padding-left:24px;';
     var rowStyle=isRef?'background:#fafbff':'background:#fff';

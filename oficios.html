@@ -205,11 +205,20 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
     <input id="an-busca" type="search" placeholder="Buscar SIMP ou assunto" oninput="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;min-width:200px;flex:1" />
     <select id="an-classe" onchange="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Todas as classes</option></select>
     <select id="an-assunto" onchange="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Todos os assuntos</option></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px">Tempo de atraso
+      <select id="an-atraso" onchange="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px">
+        <option value="">Todos os SIMPs ativos</option>
+        <option value="1">Em atraso — mais antigos primeiro</option>
+        <option value="30">30 dias ou mais</option>
+        <option value="60">60 dias ou mais</option>
+        <option value="90">90 dias ou mais</option>
+      </select>
+    </label>
     <button class="filter-btn" onclick="loadAnalise(true)">Atualizar</button>
   </div>
   <p id="an-loading" style="color:#64748b">Selecione esta aba para carregar os procedimentos.</p>
   <div class="table-wrap" style="padding:16px;margin-bottom:16px">
-    <h3 style="margin:0 0 12px">Ranking dos SIMPs ativos por quantidade de ofícios</h3>
+    <h3 id="an-ranking-title" style="margin:0 0 12px">Ranking dos SIMPs ativos por quantidade de ofícios</h3>
     <div id="an-chart"></div>
   </div>
   <div id="an-list"></div>
@@ -467,20 +476,35 @@ function anGetActive(){
   var map=new Map();anRows.forEach(r=>{if(!r.s)return;if(!map.has(r.s))map.set(r.s,[]);map.get(r.s).push(r);});
   return [...map.entries()].filter(([simp,items])=>items.some(x=>!x.respondido)).map(([simp,items])=>({simp,items,pendentes:items.filter(x=>!x.respondido).length})).sort((a,b)=>b.items.length-a.items.length||a.simp.localeCompare(b.simp));
 }
+function anFilteredGroups(today){
+  today=today||new Date().toLocaleDateString('en-CA',{timeZone:'America/Araguaina'});
+  var current=Date.parse(today+'T00:00:00Z');
+  var busca=document.getElementById('an-busca').value.trim().toLocaleLowerCase('pt-BR'),cl=document.getElementById('an-classe').value,ass=document.getElementById('an-assunto').value;
+  var minimo=Number(document.getElementById('an-atraso').value)||0;
+  var grupos=anGetActive().map(function(g){
+    g.atraso=Math.max(0,...g.items.filter(r=>!r.respondido&&r.v).map(function(r){
+      var date=Date.parse(r.v.slice(0,10)+'T00:00:00Z');
+      return Number.isFinite(date)?Math.floor((current-date)/86400000):0;
+    }));return g;
+  }).filter(g=>(!busca||g.simp.toLocaleLowerCase('pt-BR').includes(busca)||g.items.some(x=>x.a.toLocaleLowerCase('pt-BR').includes(busca)))&&(!cl||g.items.some(x=>x.c===cl))&&(!ass||g.items.some(x=>x.a===ass))&&(!minimo||g.atraso>=minimo));
+  if(minimo)grupos.sort((a,b)=>b.atraso-a.atraso||a.simp.localeCompare(b.simp));
+  return grupos;
+}
 function renderAnalise(){
   if(!anLoaded)return;
-  var busca=document.getElementById('an-busca').value.trim().toLocaleLowerCase('pt-BR'),cl=document.getElementById('an-classe').value,ass=document.getElementById('an-assunto').value;
-  var grupos=anGetActive().filter(g=>(!busca||g.simp.toLocaleLowerCase('pt-BR').includes(busca)||g.items.some(x=>x.a.toLocaleLowerCase('pt-BR').includes(busca)))&&(!cl||g.items.some(x=>x.c===cl))&&(!ass||g.items.some(x=>x.a===ass)));
+  var grupos=anFilteredGroups();
+  var porAtraso=!!document.getElementById('an-atraso').value;
+  document.getElementById('an-ranking-title').textContent=porAtraso?'SIMPs há mais tempo em atraso (dias corridos)':'Ranking dos SIMPs ativos por quantidade de ofícios';
   var rows=grupos.flatMap(g=>g.items);
   document.getElementById('an-simps').textContent=grupos.length;
   document.getElementById('an-total').textContent=rows.length;
   document.getElementById('an-pendentes').textContent=rows.filter(r=>!r.respondido).length;
   document.getElementById('an-respondidos').textContent=rows.filter(r=>r.respondido).length;
   document.getElementById('an-loading').textContent=grupos.length?'Clique em um SIMP para visualizar seu histórico completo.':'Nenhum SIMP ativo encontrado com esses filtros.';
-  var max=Math.max(1,...grupos.map(g=>g.items.length));
-  document.getElementById('an-chart').innerHTML=grupos.slice(0,30).map((g,i)=>'<div style="display:flex;gap:12px;align-items:center;margin:9px 0"><button type="button" onclick="anToggle('+i+')" style="min-width:160px;text-align:left;background:none;border:0;cursor:pointer;font-size:12px;color:#1d4ed8">'+anEscape(g.simp)+'</button><div style="flex:1;background:#e2e8f0;border-radius:8px;overflow:hidden"><div style="background:#3b82f6;height:20px;width:'+Math.max(2,g.items.length/max*100)+'%"></div></div><b style="min-width:32px;text-align:right">'+g.items.length+'</b></div>').join('');
+  var max=Math.max(1,...grupos.map(g=>porAtraso?g.atraso:g.items.length));
+  document.getElementById('an-chart').innerHTML=grupos.slice(0,30).map((g,i)=>'<div style="display:flex;gap:12px;align-items:center;margin:9px 0"><button type="button" onclick="anToggle('+i+')" style="min-width:160px;text-align:left;background:none;border:0;cursor:pointer;font-size:12px;color:#1d4ed8">'+anEscape(g.simp)+'</button><div style="flex:1;background:#e2e8f0;border-radius:8px;overflow:hidden"><div style="background:#3b82f6;height:20px;width:'+Math.max(2,(porAtraso?g.atraso:g.items.length)/max*100)+'%"></div></div><b style="min-width:32px;text-align:right">'+(porAtraso?g.atraso+' dias':g.items.length)+'</b></div>').join('');
   // DOM ids use group index so labels cannot inject HTML or event code.
-  document.getElementById('an-list').innerHTML=grupos.map((g,i)=>'<details id="an-group-'+i+'" class="table-wrap" style="margin-bottom:12px;padding:14px"><summary style="cursor:pointer;font-weight:600">SIMP '+anEscape(g.simp)+' — '+g.items.length+' ofícios ('+g.pendentes+' pendentes, '+(g.items.length-g.pendentes)+' respondidos)</summary><div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Ofício</th><th>Assunto</th><th>Classe</th><th>Responsável</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>'+g.items.slice().sort((a,b)=>Number(a.respondido)-Number(b.respondido)).map(r=>'<tr><td>'+(r.url?'<a href="'+anEscape(r.url)+'" target="_blank" rel="noopener noreferrer">'+anEscape(r.t)+'</a>':anEscape(r.t))+'</td><td>'+anEscape(r.a)+'</td><td>'+anEscape(r.c)+'</td><td>'+anEscape(r.r||'-')+'</td><td>'+anEscape(r.v||'-')+'</td><td><span class="badge '+(r.respondido?'badge-avencer':'badge-atraso')+'">'+(r.respondido?'Respondido':'Pendente')+'</span></td></tr>').join('')+'</tbody></table></div></details>').join('');
+  document.getElementById('an-list').innerHTML=grupos.map((g,i)=>'<details id="an-group-'+i+'" class="table-wrap" style="margin-bottom:12px;padding:14px"><summary style="cursor:pointer;font-weight:600">SIMP '+anEscape(g.simp)+' — '+g.items.length+' ofícios ('+g.pendentes+' pendentes, '+(g.items.length-g.pendentes)+' respondidos)'+(g.atraso?' — '+g.atraso+' dias de atraso':'')+'</summary><div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Ofício</th><th>Assunto</th><th>Classe</th><th>Responsável</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>'+g.items.slice().sort((a,b)=>Number(a.respondido)-Number(b.respondido)).map(r=>'<tr><td>'+(r.url?'<a href="'+anEscape(r.url)+'" target="_blank" rel="noopener noreferrer">'+anEscape(r.t)+'</a>':anEscape(r.t))+'</td><td>'+anEscape(r.a)+'</td><td>'+anEscape(r.c)+'</td><td>'+anEscape(r.r||'-')+'</td><td>'+anEscape(r.v||'-')+'</td><td><span class="badge '+(r.respondido?'badge-avencer':'badge-atraso')+'">'+(r.respondido?'Respondido':'Pendente')+'</span></td></tr>').join('')+'</tbody></table></div></details>').join('');
 }
 function anToggle(i){var d=document.getElementById('an-group-'+i);if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}}
 

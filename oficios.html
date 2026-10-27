@@ -164,6 +164,7 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('oficios',this)">Oficios MP 2026</button>
+  <button class="tab-btn" onclick="switchTab('analise',this)">Análise de SIMPs</button>
   <button class="tab-btn" onclick="switchTab('numeros',this)">Num. Oficio-PGM</button>
   <button class="tab-btn" onclick="switchTab('pareceres',this)">Num. Parecer-PGM</button>
 </div>
@@ -189,6 +190,29 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
     <table id="table-of" style="display:none"><thead><tr><th>Oficio</th><th>Vencimento</th><th>Responsavel</th><th style="text-align:center">Dias</th><th style="text-align:center">Situacao</th><th style="text-align:center">Status</th><th style="text-align:center">Acao</th></tr></thead><tbody id="tbody-of"></tbody></table>
     <div class="empty" id="empty-of" style="display:none">Nenhum resultado.</div>
   </div>
+</div></div>
+
+<!-- ANÁLISE DE SIMPs: apenas procedimentos com pendência, com histórico completo -->
+<div id="tab-analise" style="display:none"><div class="container">
+  <div id="analise-error" class="error-box" style="display:none"></div>
+  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div class="card total"><div class="label">SIMPs ativos</div><div class="value" id="an-simps">—</div></div>
+    <div class="card livre"><div class="label">Ofícios vinculados</div><div class="value" id="an-total">—</div></div>
+    <div class="card total"><div class="label">Pendentes</div><div class="value" id="an-pendentes">—</div></div>
+    <div class="card livre"><div class="label">Respondidos</div><div class="value" id="an-respondidos">—</div></div>
+  </div>
+  <div class="controls" style="flex-wrap:wrap;gap:10px">
+    <input id="an-busca" type="search" placeholder="Buscar SIMP ou assunto" oninput="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;min-width:200px;flex:1" />
+    <select id="an-classe" onchange="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Todas as classes</option></select>
+    <select id="an-assunto" onchange="renderAnalise()" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Todos os assuntos</option></select>
+    <button class="filter-btn" onclick="loadAnalise(true)">Atualizar</button>
+  </div>
+  <p id="an-loading" style="color:#64748b">Selecione esta aba para carregar os procedimentos.</p>
+  <div class="table-wrap" style="padding:16px;margin-bottom:16px">
+    <h3 style="margin:0 0 12px">Ranking dos SIMPs ativos por quantidade de ofícios</h3>
+    <div id="an-chart"></div>
+  </div>
+  <div id="an-list"></div>
 </div></div>
 
 <!-- ABA NUMEROS -->
@@ -240,7 +264,6 @@ footer{text-align:center;padding:20px;font-size:12px;color:#9ca3af}
 <footer>Fonte: Notion | Atualiza a cada carregamento</footer>
 
 <script>
-var T=atob('bnRuXzMzNjYzMDY3NzQ5OEtxS0NEckFZaERvMk92ZmtjSExCdGVacUVKWERVRURlZlU=');
 var D1='2e27d679a665812da9cbdabaab1fa104';
 var D2='36e7d679a6658120b0e2d3eb272755bd';
 var D3='36f7d679a6658161 9f26ed14687e0b9a'.split(' ').join('');
@@ -249,7 +272,7 @@ var SUPA_URL='https://khhejpxiyzbyrctaxdhm.supabase.co';
 var SUPA_KEY='sb_publishable_06TF_4sAy4Y15TWVF939BA_kMNhkbxq';
 var SHEETS='https://script.google.com/macros/s/AKfycbyU9l6mkXUYKyJABW8K-KB-yiHs8eHp_HDO4-JwQhe5h7mF8QeiZHkXMPo08drUZdBuow/exec';
 var GA_ID='G-9XPY49NV0Z';
-var CHAVE='Senha123';
+var anRows=[],anLoaded=false,anBusy=false;
 var ofRows=[],num2Rows=[],num3Rows=[],afOf='all',afNum2='all',afNum3='all';
 
 
@@ -294,8 +317,8 @@ function setStatus(id,status){
   if(row)row.sf=status;
   renderOf(afOf,document.getElementById('search-of').value);
   // Salvar no Notion via proxy
-  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    action:'updateStatus',notionToken:T,pageId:id,statusFluxo:status
+  fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({
+    action:'updateStatus',pageId:id,statusFluxo:status
   })}).catch(function(e){console.error('Erro ao salvar status:',e);});
 }
 
@@ -309,6 +332,12 @@ window.addEventListener('resize',function(){
   document.querySelectorAll('.status-menu').forEach(function(m){m.classList.remove('show');});
 });
 
+
+// O segredo do Notion fica exclusivamente no Worker.
+function proxyHeaders(){
+  var token=sessionStorage.getItem('pgm_token')||localStorage.getItem('pgm_token');
+  return {'Content-Type':'application/json','Authorization':'Bearer '+(token||'')};
+}
 
 // LOGIN
 function doLogin(){
@@ -329,7 +358,7 @@ function doLogin(){
       var nome=(d.user&&d.user.user_metadata&&d.user.user_metadata.nome)||u.split('@')[0];
       sessionStorage.setItem('pgm_token',d.access_token);
       localStorage.setItem('pgm_nome',nome);
-      if(rem){localStorage.setItem('pgm_token',d.access_token);}
+      if(rem){localStorage.setItem('pgm_token',d.access_token);}else{localStorage.removeItem('pgm_token');}
       document.getElementById('login-screen').style.display='none';
       entrarComNome(nome,false);
     } else {
@@ -344,7 +373,7 @@ function doLogin(){
   });
 }
 function checkAuth(){
-  var tok=localStorage.getItem('pgm_token')||sessionStorage.getItem('pgm_token');
+  var tok=sessionStorage.getItem('pgm_token')||localStorage.getItem('pgm_token');
   if(!tok)return;
   fetch(SUPA_URL+'/auth/v1/user',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+tok}})
     .then(function(r){if(!r.ok)throw 0;return r.json();})
@@ -394,10 +423,66 @@ function registrarNoSheets(nome,acao,detalhe){
 function switchTab(tab,btn){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
-  ['oficios','numeros','pareceres'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
+  ['oficios','analise','numeros','pareceres'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
+  if(tab==='analise'&&!anLoaded)loadAnalise();
   if(tab==='numeros'&&num2Rows.length===0)loadNums(D2,'num2','n2','error-box-2');
   if(tab==='pareceres'&&num3Rows.length===0)loadNums(D3,'num3','n3','error-box-3');
 }
+
+// Análise: consulta independente e paginada; preserva a listagem original de pendentes.
+function anText(p){if(!p)return '';if(p.type==='select')return p.select&&p.select.name||'';if(p.type==='title')return (p.title||[]).map(x=>x.plain_text||'').join('');if(p.type==='rich_text')return (p.rich_text||[]).map(x=>x.plain_text||'').join('');return p.plain_text||'';}
+function anEscape(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadAnalise(force){
+  if(anBusy)return;
+  if(anLoaded&&!force){renderAnalise();return;}
+  anBusy=true;
+  var msg=document.getElementById('an-loading'),err=document.getElementById('analise-error');
+  msg.textContent='Consultando todos os ofícios no Notion...';err.style.display='none';
+  try{
+    var results=[],cursor=null;
+    do{
+      var payload={page_size:100};if(cursor)payload.start_cursor=cursor;
+      var res=await fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({databaseId:D1,payload:payload})});
+      if(!res.ok){var failure=await res.json().catch(function(){return {};});throw Error(failure.message||('Falha HTTP '+res.status));}
+      var data=await res.json();if(!Array.isArray(data.results))throw Error('Consulta do Notion retornou formato inesperado.');
+      results.push(...data.results);cursor=data.has_more?data.next_cursor:null;
+    }while(cursor);
+    anRows=results.map(pg=>{
+      var p=pg.properties||{};var title=Object.keys(p).find(k=>p[k].type==='title');
+      var raw=anText(p['Protocolo SIMP']).trim();var simp=raw.replace(/\.$/,'').trim();
+      var assunto=anText(p['ASSUNTO DO SIMP'])||anText(p['Nome Servidor'])||'';
+      var prazo=p['Data do Vencimento']&&p['Data do Vencimento'].date&&p['Data do Vencimento'].date.start||'';
+      return {id:pg.id,t:anText(p[title])||'Sem título',s:simp,a:assunto,c:anText(p['Classe do Procedimento']),r:anText(p['Responsavel']),v:prazo,respondido:!!(p['Respondido']&&p['Respondido'].checkbox),url:pg.url||''};
+    });
+    anLoaded=true;
+    var active=anGetActive();
+    function fill(id,values,all){var select=document.getElementById(id),before=select.value;select.innerHTML='<option value="">'+all+'</option>'+values.map(v=>'<option value="'+anEscape(v)+'">'+anEscape(v)+'</option>').join('');if(values.includes(before))select.value=before;}
+    fill('an-classe',[...new Set(active.flatMap(g=>g.items.map(i=>i.c)).filter(Boolean))].sort(),'Todas as classes');
+    fill('an-assunto',[...new Set(active.flatMap(g=>g.items.map(i=>i.a)).filter(Boolean))].sort(),'Todos os assuntos');
+    renderAnalise();
+  }catch(e){err.style.display='block';err.textContent='Não foi possível carregar a análise: '+e.message;msg.textContent='';}
+  finally{anBusy=false;}
+}
+function anGetActive(){
+  var map=new Map();anRows.forEach(r=>{if(!r.s)return;if(!map.has(r.s))map.set(r.s,[]);map.get(r.s).push(r);});
+  return [...map.entries()].filter(([simp,items])=>items.some(x=>!x.respondido)).map(([simp,items])=>({simp,items,pendentes:items.filter(x=>!x.respondido).length})).sort((a,b)=>b.items.length-a.items.length||a.simp.localeCompare(b.simp));
+}
+function renderAnalise(){
+  if(!anLoaded)return;
+  var busca=document.getElementById('an-busca').value.trim().toLocaleLowerCase('pt-BR'),cl=document.getElementById('an-classe').value,ass=document.getElementById('an-assunto').value;
+  var grupos=anGetActive().filter(g=>(!busca||g.simp.toLocaleLowerCase('pt-BR').includes(busca)||g.items.some(x=>x.a.toLocaleLowerCase('pt-BR').includes(busca)))&&(!cl||g.items.some(x=>x.c===cl))&&(!ass||g.items.some(x=>x.a===ass)));
+  var rows=grupos.flatMap(g=>g.items);
+  document.getElementById('an-simps').textContent=grupos.length;
+  document.getElementById('an-total').textContent=rows.length;
+  document.getElementById('an-pendentes').textContent=rows.filter(r=>!r.respondido).length;
+  document.getElementById('an-respondidos').textContent=rows.filter(r=>r.respondido).length;
+  document.getElementById('an-loading').textContent=grupos.length?'Clique em um SIMP para visualizar seu histórico completo.':'Nenhum SIMP ativo encontrado com esses filtros.';
+  var max=Math.max(1,...grupos.map(g=>g.items.length));
+  document.getElementById('an-chart').innerHTML=grupos.slice(0,30).map((g,i)=>'<div style="display:flex;gap:12px;align-items:center;margin:9px 0"><button type="button" onclick="anToggle('+i+')" style="min-width:160px;text-align:left;background:none;border:0;cursor:pointer;font-size:12px;color:#1d4ed8">'+anEscape(g.simp)+'</button><div style="flex:1;background:#e2e8f0;border-radius:8px;overflow:hidden"><div style="background:#3b82f6;height:20px;width:'+Math.max(2,g.items.length/max*100)+'%"></div></div><b style="min-width:32px;text-align:right">'+g.items.length+'</b></div>').join('');
+  // DOM ids use group index so labels cannot inject HTML or event code.
+  document.getElementById('an-list').innerHTML=grupos.map((g,i)=>'<details id="an-group-'+i+'" class="table-wrap" style="margin-bottom:12px;padding:14px"><summary style="cursor:pointer;font-weight:600">SIMP '+anEscape(g.simp)+' — '+g.items.length+' ofícios ('+g.pendentes+' pendentes, '+(g.items.length-g.pendentes)+' respondidos)</summary><div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Ofício</th><th>Assunto</th><th>Classe</th><th>Responsável</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>'+g.items.slice().sort((a,b)=>Number(a.respondido)-Number(b.respondido)).map(r=>'<tr><td>'+(r.url?'<a href="'+anEscape(r.url)+'" target="_blank" rel="noopener noreferrer">'+anEscape(r.t)+'</a>':anEscape(r.t))+'</td><td>'+anEscape(r.a)+'</td><td>'+anEscape(r.c)+'</td><td>'+anEscape(r.r||'-')+'</td><td>'+anEscape(r.v||'-')+'</td><td><span class="badge '+(r.respondido?'badge-avencer':'badge-atraso')+'">'+(r.respondido?'Respondido':'Pendente')+'</span></td></tr>').join('')+'</tbody></table></div></details>').join('');
+}
+function anToggle(i){var d=document.getElementById('an-group-'+i);if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}}
 
 // OFICIOS
 async function loadOf(){
@@ -407,7 +492,7 @@ async function loadOf(){
     do{
       var payload={filter:{property:'Respondido',checkbox:{equals:false}},sorts:[{property:'Data do Vencimento',direction:'ascending'}],page_size:100};
       if(cursor)payload.start_cursor=cursor;
-      var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:D1,payload:payload})});
+      var r=await fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({databaseId:D1,payload:payload})});
       var d=await r.json();
       if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
       allResults=allResults.concat(d.results);
@@ -506,7 +591,7 @@ function renderOf(f,s){
 async function marcarOf(id,btn){
   if(!confirm('Marcar como respondido? A data de hoje sera registrada.'))return;
   btn.disabled=true;btn.textContent='Salvando...';
-  var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',notionToken:T,pageId:id})});
+  var r=await fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({action:'update',pageId:id})});
   var d=await r.json();
   if(d.object==='error'){btn.disabled=false;btn.textContent='Responder';alert('Erro: '+d.message);return;}
   var tr=document.getElementById('row-'+id);
@@ -524,7 +609,7 @@ async function loadNums(dbId,prefix,cp,errId){
     do{
       var payload={page_size:100};
       if(cursor)payload.start_cursor=cursor;
-      var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notionToken:T,databaseId:dbId,payload:payload})});
+      var r=await fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({databaseId:dbId,payload:payload})});
       var d=await r.json();
       if(!d.results)throw new Error(JSON.stringify(d).substring(0,100));
       all=all.concat(d.results);
@@ -575,7 +660,7 @@ async function tgNum(id,num,usado,prefix){
   if(!confirm(usado?'Desmarcar o numero '+num+'?':'Marcar o numero '+num+' como usado?'))return;
   var el=document.getElementById('nc-'+id);
   el.classList.add('saving');el.onclick=null;el.textContent='...';
-  var r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:usado?'unmarkUsed':'markUsed',notionToken:T,pageId:id})});
+  var r=await fetch(PROXY,{method:'POST',headers:proxyHeaders(),body:JSON.stringify({action:usado?'unmarkUsed':'markUsed',pageId:id})});
   var d=await r.json();
   if(d.object==='error'){el.classList.remove('saving');el.textContent=(usado?'&#x2705; ':'')+num;el.onclick=function(){tgNum(id,num,usado,prefix);};alert('Erro: '+d.message);return;}
   var nomeSrv=localStorage.getItem('pgm_nome')||'Desconhecido';
@@ -595,6 +680,7 @@ setInterval(function(){
   if(localStorage.getItem('pgm_auth')==='ok'||sessionStorage.getItem('pgm_auth')==='ok'){
     var tabAtiva=document.querySelector('.tab-btn.active');
     if(tabAtiva&&tabAtiva.textContent.includes('Oficios'))loadOf();
+    if(tabAtiva&&tabAtiva.textContent.includes('Análise de SIMPs'))loadAnalise(true);
   }
 },5*60*1000);
 // Numeros e Pareceres: a cada 15 segundos
